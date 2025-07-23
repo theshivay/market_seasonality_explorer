@@ -1,247 +1,209 @@
 import moment from 'moment';
 
-// Function to format a date in various formats
+// Format date in different formats
 export const formatDate = (date, format = 'YYYY-MM-DD') => {
+  if (!date) return '';
   return moment(date).format(format);
 };
 
-// Function to get array of dates for a month
-export const getDatesInMonth = (year, month) => {
-  const startOfMonth = moment().year(year).month(month).startOf('month');
-  const endOfMonth = moment().year(year).month(month).endOf('month');
-  
-  const dates = [];
-  let currentDate = startOfMonth.clone();
-  
-  while (currentDate <= endOfMonth) {
-    dates.push(currentDate.clone());
-    currentDate.add(1, 'day');
+// Format number with commas
+export const formatNumber = (num, precision = 0) => {
+  if (num === null || num === undefined) return '-';
+  if (num >= 1000000000) {
+    return (num / 1000000000).toFixed(1) + 'B';
   }
-  
-  return dates;
+  if (num >= 1000000) {
+    return (num / 1000000).toFixed(1) + 'M';
+  }
+  if (num >= 1000) {
+    return (num / 1000).toFixed(1) + 'K';
+  }
+  return num.toLocaleString('en-US', { 
+    minimumFractionDigits: precision,
+    maximumFractionDigits: precision
+  });
 };
 
-// Function to get array of weeks for a month
-export const getWeeksInMonth = (year, month) => {
-  const startOfMonth = moment().year(year).month(month).startOf('month');
-  const endOfMonth = moment().year(year).month(month).endOf('month');
+// Format percentage
+export const formatPercentage = (num, precision = 2) => {
+  if (num === null || num === undefined) return '-';
+  return `${num >= 0 ? '+' : ''}${num.toFixed(precision)}%`;
+};
+
+// Get volatility level classification
+export const getVolatilityLevel = (volatility, thresholds = { high: 2.0, low: 0.5 }) => {
+  if (volatility === null || volatility === undefined) return 'normal';
+  if (volatility >= thresholds.high) return 'high';
+  if (volatility <= thresholds.low) return 'low';
+  return 'normal';
+};
+
+// Get performance level classification
+export const getPerformanceLevel = (percentChange, thresholds = { good: 1.0, bad: -1.0 }) => {
+  if (percentChange === null || percentChange === undefined) return 'neutral';
+  if (percentChange >= thresholds.good) return 'good';
+  if (percentChange <= thresholds.bad) return 'bad';
+  return 'neutral';
+};
+
+// Generate calendar days for a month view
+export const getCalendarDaysForMonth = (month) => {
+  const firstDay = moment(month).startOf('month');
+  const lastDay = moment(month).endOf('month');
+  const startDay = firstDay.clone().startOf('week');
+  const endDay = lastDay.clone().endOf('week');
+  
+  const days = [];
+  let currentDay = startDay.clone();
+  
+  while (currentDay.isSameOrBefore(endDay, 'day')) {
+    days.push(currentDay.clone());
+    currentDay.add(1, 'day');
+  }
+  
+  return days;
+};
+
+// Generate calendar days for a week view
+export const getCalendarDaysForWeek = (date) => {
+  const startOfWeek = moment(date).startOf('week');
+  
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    days.push(startOfWeek.clone().add(i, 'day'));
+  }
+  
+  return days;
+};
+
+// Get week numbers for the current month
+export const getWeekNumbers = (month) => {
+  const firstDay = moment(month).startOf('month');
+  const lastDay = moment(month).endOf('month');
   
   const weeks = [];
-  let currentWeek = [];
+  let currentWeek = firstDay.week();
   
-  // Fill in the days from previous month to complete the first week
-  const firstDay = startOfMonth.day(); // 0 is Sunday, 1 is Monday, etc.
-  
-  if (firstDay !== 0) { // If the month doesn't start on Sunday
-    const prevMonth = startOfMonth.clone().subtract(1, 'month');
-    const daysInPrevMonth = prevMonth.daysInMonth();
-    
-    for (let i = firstDay - 1; i >= 0; i--) {
-      const day = daysInPrevMonth - i;
-      const date = prevMonth.clone().date(day);
-      currentWeek.push(date);
-    }
-  }
-  
-  // Fill in the days of the current month
-  let currentDate = startOfMonth.clone();
-  
-  while (currentDate <= endOfMonth) {
-    if (currentDate.day() === 0 && currentWeek.length > 0) {
-      weeks.push(currentWeek);
-      currentWeek = [];
-    }
-    
-    currentWeek.push(currentDate.clone());
-    currentDate.add(1, 'day');
-  }
-  
-  // Fill in days from the next month to complete the last week
-  const lastDay = endOfMonth.day();
-  
-  if (lastDay !== 6) { // If the month doesn't end on Saturday
-    const nextMonth = endOfMonth.clone().add(1, 'month');
-    let day = 1;
-    
-    for (let i = lastDay + 1; i <= 6; i++) {
-      const date = nextMonth.clone().date(day++);
-      currentWeek.push(date);
-    }
-  }
-  
-  // Add the last week
-  if (currentWeek.length > 0) {
+  while (currentWeek <= lastDay.week()) {
     weeks.push(currentWeek);
+    currentWeek++;
   }
   
   return weeks;
 };
 
-// Function to get day names for calendar header
-export const getDayNames = (format = 'ddd') => {
-  const days = [];
-  for (let i = 0; i < 7; i++) {
-    days.push(moment().day(i).format(format));
+// Format a date range as string
+export const formatDateRange = (start, end) => {
+  if (start.isSame(end, 'day')) {
+    return start.format('MMMM D, YYYY');
   }
-  return days;
-};
-
-// Function to get month names for dropdown/selector
-export const getMonthNames = (format = 'MMMM') => {
-  const months = [];
-  for (let i = 0; i < 12; i++) {
-    months.push(moment().month(i).format(format));
+  
+  if (start.isSame(end, 'month') && start.isSame(end, 'year')) {
+    return `${start.format('MMMM')} ${start.format('D')} - ${end.format('D')}, ${start.format('YYYY')}`;
   }
-  return months;
-};
-
-// Function to calculate volatility level based on value
-export const getVolatilityLevel = (volatility, thresholds) => {
-  // Convert volatility to percentage if it's in decimal form
-  const volatilityPercentage = volatility <= 1 ? volatility * 100 : volatility;
   
-  // Apply thresholds (which are expressed in percentage)
-  if (volatilityPercentage < thresholds.low) {
-    return 'low';
-  } else if (volatilityPercentage >= thresholds.high) {
-    return 'high';
-  } else {
-    return 'medium';
+  if (start.isSame(end, 'year')) {
+    return `${start.format('MMM D')} - ${end.format('MMM D')}, ${start.format('YYYY')}`;
   }
+  
+  return `${start.format('MMM D, YYYY')} - ${end.format('MMM D, YYYY')}`;
 };
 
-// Function to determine performance level based on change
-export const getPerformanceLevel = (change, thresholds) => {
-  if (change > thresholds.good) {
-    return 'positive';
-  } else if (change < thresholds.bad) {
-    return 'negative';
-  } else {
-    return 'neutral';
+// Calculate date colors based on market data (volatility)
+export const getVolatilityColor = (volatility, colorTheme = 'default') => {
+  // Normalize volatility to a 0-1 scale
+  // Assuming volatility ranges from 0-10 in our mock data
+  const normalizedValue = Math.min(volatility / 10, 1);
+  
+  if (colorTheme === 'default') {
+    // Green to Red scale
+    if (normalizedValue < 0.3) return 'rgb(74, 222, 128)'; // Light green
+    if (normalizedValue < 0.6) return 'rgb(250, 204, 21)'; // Yellow
+    if (normalizedValue < 0.8) return 'rgb(251, 146, 60)'; // Orange
+    return 'rgb(248, 113, 113)'; // Red
   }
-};
-
-// Function to generate PDF export
-export const generatePDF = (elementId) => {
-  // This would be implemented with a library like html2pdf or jsPDF
-  console.log(`Generate PDF for element: ${elementId}`);
-};
-
-// Function to export data as CSV
-export const exportAsCSV = (data, filename = 'export.csv') => {
-  if (!data || !data.length) return;
   
-  // Convert data to CSV format
-  const headers = Object.keys(data[0]).join(',');
-  const rows = data.map(row => Object.values(row).join(','));
-  const csvContent = [headers, ...rows].join('\n');
-  
-  // Create a blob and download
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  const url = URL.createObjectURL(blob);
-  
-  link.setAttribute('href', url);
-  link.setAttribute('download', filename);
-  link.style.visibility = 'hidden';
-  
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-};
-
-// Function to calculate date ranges for different view modes
-export const getDateRangeForView = (date, viewMode) => {
-  const currentDate = moment(date);
-  
-  switch (viewMode) {
-    case 'daily':
-      return {
-        start: currentDate.clone().startOf('day'),
-        end: currentDate.clone().endOf('day')
-      };
-    case 'weekly':
-      return {
-        start: currentDate.clone().startOf('week'),
-        end: currentDate.clone().endOf('week')
-      };
-    case 'monthly':
-      return {
-        start: currentDate.clone().startOf('month'),
-        end: currentDate.clone().endOf('month')
-      };
-    default:
-      return {
-        start: currentDate.clone().startOf('day'),
-        end: currentDate.clone().endOf('day')
-      };
+  if (colorTheme === 'contrast') {
+    // Higher contrast colors
+    if (normalizedValue < 0.3) return 'rgb(22, 163, 74)'; // Dark green
+    if (normalizedValue < 0.6) return 'rgb(202, 138, 4)'; // Dark yellow
+    if (normalizedValue < 0.8) return 'rgb(234, 88, 12)'; // Dark orange
+    return 'rgb(220, 38, 38)'; // Dark red
   }
-};
-
-// Function to check if a date is in a selected range
-export const isDateInRange = (date, range) => {
-  if (!range || !range[0] || !range[1]) return false;
   
-  const checkDate = moment(date).startOf('day');
-  const startDate = moment(range[0]).startOf('day');
-  const endDate = moment(range[1]).startOf('day');
-  
-  return checkDate >= startDate && checkDate <= endDate;
-};
-
-// Function to check if a date is today
-export const isToday = (date) => {
-  return moment(date).isSame(moment(), 'day');
-};
-
-// Function to get a color based on value and a color scale
-export const getColorForValue = (value, min, max, colorScale) => {
-  if (value <= min) return colorScale[0];
-  if (value >= max) return colorScale[colorScale.length - 1];
-  
-  const range = max - min;
-  const normalizedValue = (value - min) / range;
-  const index = Math.floor(normalizedValue * (colorScale.length - 1));
-  
-  return colorScale[index];
-};
-
-// Function to format numbers with appropriate precision
-export const formatNumber = (number, precision = 2) => {
-  if (number === undefined || number === null) return '-';
-  
-  if (Math.abs(number) >= 1000000) {
-    return `${(number / 1000000).toFixed(precision)}M`;
-  } else if (Math.abs(number) >= 1000) {
-    return `${(number / 1000).toFixed(precision)}K`;
-  } else {
-    return number.toFixed(precision);
+  if (colorTheme === 'colorblind') {
+    // Colorblind-friendly palette
+    if (normalizedValue < 0.3) return 'rgb(0, 158, 115)'; // Teal
+    if (normalizedValue < 0.6) return 'rgb(240, 228, 66)'; // Yellow
+    if (normalizedValue < 0.8) return 'rgb(0, 114, 178)'; // Blue
+    return 'rgb(213, 94, 0)'; // Vermilion
   }
+  
+  return 'rgb(209, 213, 219)'; // Default gray
 };
 
-// Function to format percentage values
-export const formatPercentage = (value, precision = 2) => {
-  if (value === undefined || value === null) return '-';
-  return `${value >= 0 ? '+' : ''}${value.toFixed(precision)}%`;
+// Calculate performance arrow direction and color
+export const getPerformanceIndicator = (performance, colorTheme = 'default') => {
+  if (performance > 0.5) {
+    return {
+      direction: 'up',
+      color: colorTheme === 'colorblind' ? 'rgb(0, 158, 115)' : 'rgb(34, 197, 94)'
+    };
+  }
+  
+  if (performance < -0.5) {
+    return {
+      direction: 'down',
+      color: colorTheme === 'colorblind' ? 'rgb(213, 94, 0)' : 'rgb(239, 68, 68)'
+    };
+  }
+  
+  return {
+    direction: 'neutral',
+    color: 'rgb(156, 163, 175)'
+  };
 };
 
-// Create a single object with all exports
-const dateUtils = {
-  formatDate,
-  getDatesInMonth,
-  getWeeksInMonth,
-  getDayNames,
-  getMonthNames,
-  getVolatilityLevel,
-  getPerformanceLevel,
-  generatePDF,
-  exportAsCSV,
-  getDateRangeForView,
-  isDateInRange,
-  isToday,
-  getColorForValue,
-  formatNumber,
-  formatPercentage
+// Format price with currency symbol and appropriate decimals
+export const formatPrice = (price, instrument = null) => {
+  if (price === null || price === undefined) return '-';
+  
+  // Determine currency symbol based on instrument type
+  let symbol = '$';
+  let precision = 2;
+  
+  if (instrument) {
+    // If we have an instrument object with symbol or id property
+    if (typeof instrument === 'object') {
+      if ((instrument.symbol && (instrument.symbol.includes('BTC') || instrument.symbol.includes('ETH'))) ||
+          (instrument.id && (instrument.id.includes('BTC') || instrument.id.includes('ETH')))) {
+        precision = 4;
+      } else if (instrument.symbol && instrument.symbol.includes('JPY')) {
+        precision = 0;
+        symbol = '¥';
+      } else if (instrument.symbol && instrument.symbol.includes('EUR')) {
+        symbol = '€';
+      } else if (instrument.symbol && instrument.symbol.includes('GBP')) {
+        symbol = '£';
+      }
+    }
+    // Simple string currency check
+    else if (typeof instrument === 'string') {
+      if (instrument.includes('BTC') || instrument.includes('ETH')) {
+        precision = 4;
+      } else if (instrument.includes('JPY')) {
+        precision = 0;
+        symbol = '¥';
+      } else if (instrument.includes('EUR')) {
+        symbol = '€';
+      } else if (instrument.includes('GBP')) {
+        symbol = '£';
+      }
+    }
+  }
+  
+  return `${symbol}${price.toLocaleString('en-US', {
+    minimumFractionDigits: precision,
+    maximumFractionDigits: precision
+  })}`;
 };
-
-export default dateUtils;

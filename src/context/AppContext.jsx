@@ -1,122 +1,152 @@
-import React, { createContext, useState, useCallback } from 'react';
+import React, { createContext, useState, useEffect, useCallback } from 'react';
 import moment from 'moment';
 
 // Create context
 export const AppContext = createContext();
 
-const AppContextProvider = ({ children }) => {
-  // State for current view mode (daily, weekly, monthly)
-  const [viewMode, setViewMode] = useState('daily');
+// Available financial instruments
+const INSTRUMENTS = [
+  { id: 'BTC-USD', name: 'Bitcoin (BTC/USD)' },
+  { id: 'ETH-USD', name: 'Ethereum (ETH/USD)' },
+  { id: 'SOL-USD', name: 'Solana (SOL/USD)' },
+  { id: 'AAPL', name: 'Apple Inc. (AAPL)' },
+  { id: 'MSFT', name: 'Microsoft (MSFT)' },
+  { id: 'GOOGL', name: 'Google (GOOGL)' },
+];
+
+// View modes
+const VIEW_MODES = {
+  DAY: 'day',
+  WEEK: 'week',
+  MONTH: 'month',
+};
+
+export const AppContextProvider = ({ children }) => {
+  // Date state
+  const [currentDate, setCurrentDate] = useState(moment());
   
-  // State for currently selected date(s)
-  const [selectedDate, setSelectedDate] = useState(moment());
-  const [selectedDateRange, setSelectedDateRange] = useState([null, null]);
+  // View mode (day/week/month)
+  const [viewMode, setViewMode] = useState(VIEW_MODES.MONTH);
   
-  // State for financial instrument selection
-  const [selectedInstrument, setSelectedInstrument] = useState('BTCUSDT');
+  // Selected instrument
+  const [selectedInstrument, setSelectedInstrument] = useState(INSTRUMENTS[0]);
   
-  // State for theme selection
-  const [themeMode, setThemeMode] = useState('default');
+  // Selected days for multi-selection mode
+  const [selectedDays, setSelectedDays] = useState([]);
   
-  // State for market data
-  const [marketData, setMarketData] = useState({
-    isLoading: false,
-    data: null,
-    error: null,
+  // Selected time range
+  const [timeRange, setTimeRange] = useState({
+    start: moment().subtract(30, 'days'),
+    end: moment(),
   });
-  
-  // State for whether details panel is open
-  const [detailsOpen, setDetailsOpen] = useState(false);
-  
-  // State for alerts/thresholds
-  const [alerts, setAlerts] = useState([]);
-  const [thresholds, setThresholds] = useState({
-    volatility: {
-      low: 0.5,  // Below 0.5% is low volatility
-      high: 2.0, // Above 2.0% is high volatility
-    },
-    performance: {
-      good: 1.0,  // Above 1.0% is good performance
-      bad: -1.0,  // Below -1.0% is bad performance
-    }
-  });
-  
-  // Function to toggle view mode
-  const toggleViewMode = (mode) => {
-    if (['daily', 'weekly', 'monthly'].includes(mode)) {
-      setViewMode(mode);
-    }
-  };
-  
-  // Function to select date
-  const selectDate = (date) => {
-    setSelectedDate(moment(date));
-  };
-  
-  // Function to select date range
-  const selectDateRange = (startDate, endDate) => {
-    setSelectedDateRange([
-      startDate ? moment(startDate) : null,
-      endDate ? moment(endDate) : null
-    ]);
-  };
-  
-  // Function to toggle details panel
-  const toggleDetailsPanel = useCallback(() => {
-    setDetailsOpen(prevState => !prevState);
+
+  // Color theme
+  const [colorTheme, setColorTheme] = useState('default'); // default, contrast, colorblind
+
+  // Navigation functions
+  const nextMonth = useCallback(() => {
+    setCurrentDate(prevDate => moment(prevDate).add(1, 'month'));
+  }, []);
+
+  const prevMonth = useCallback(() => {
+    setCurrentDate(prevDate => moment(prevDate).subtract(1, 'month'));
+  }, []);
+
+  const nextWeek = useCallback(() => {
+    setCurrentDate(prevDate => moment(prevDate).add(1, 'week'));
+  }, []);
+
+  const prevWeek = useCallback(() => {
+    setCurrentDate(prevDate => moment(prevDate).subtract(1, 'week'));
+  }, []);
+
+  const nextDay = useCallback(() => {
+    setCurrentDate(prevDate => moment(prevDate).add(1, 'day'));
+  }, []);
+
+  const prevDay = useCallback(() => {
+    setCurrentDate(prevDate => moment(prevDate).subtract(1, 'day'));
+  }, []);
+
+  const goToToday = useCallback(() => {
+    setCurrentDate(moment());
+  }, []);
+
+  // Date selection
+  const selectDate = useCallback((date) => {
+    setSelectedDays(prev => {
+      const dateStr = moment(date).format('YYYY-MM-DD');
+      const isAlreadySelected = prev.some(d => moment(d).format('YYYY-MM-DD') === dateStr);
+      
+      if (isAlreadySelected) {
+        return prev.filter(d => moment(d).format('YYYY-MM-DD') !== dateStr);
+      } else {
+        return [...prev, date];
+      }
+    });
   }, []);
   
-  // Function to change financial instrument
-  const changeInstrument = (instrument) => {
-    setSelectedInstrument(instrument);
-  };
-  
-  // Function to change theme
-  const changeTheme = (theme) => {
-    if (['default', 'highContrast', 'colorblindFriendly'].includes(theme)) {
-      setThemeMode(theme);
+  const clearSelection = useCallback(() => {
+    setSelectedDays([]);
+  }, []);
+
+  // For keyboard navigation
+  const handleKeyNavigation = useCallback((event) => {
+    switch(event.key) {
+      case 'ArrowLeft':
+        if (viewMode === VIEW_MODES.MONTH) prevMonth();
+        else if (viewMode === VIEW_MODES.WEEK) prevWeek();
+        else prevDay();
+        break;
+      case 'ArrowRight':
+        if (viewMode === VIEW_MODES.MONTH) nextMonth();
+        else if (viewMode === VIEW_MODES.WEEK) nextWeek();
+        else nextDay();
+        break;
+      case 'Escape':
+        clearSelection();
+        break;
+      case 'Enter':
+        // Handle date selection
+        break;
+      default:
+        break;
     }
-  };
-  
-  // Function to add alert
-  const addAlert = (alert) => {
-    setAlerts(prev => [...prev, { ...alert, id: Date.now() }]);
-  };
-  
-  // Function to remove alert
-  const removeAlert = (alertId) => {
-    setAlerts(prev => prev.filter(alert => alert.id !== alertId));
-  };
-  
-  // Function to update thresholds
-  const updateThresholds = (newThresholds) => {
-    setThresholds(prev => ({
-      ...prev,
-      ...newThresholds
-    }));
-  };
-  
-  // Provide context value to children
+  }, [viewMode, prevMonth, nextMonth, prevWeek, nextWeek, prevDay, nextDay, clearSelection]);
+
+  useEffect(() => {
+    // Add keyboard event listeners
+    document.addEventListener('keydown', handleKeyNavigation);
+    
+    return () => {
+      document.removeEventListener('keydown', handleKeyNavigation);
+    };
+  }, [handleKeyNavigation]);
+
   const contextValue = {
+    currentDate,
+    setCurrentDate,
     viewMode,
-    toggleViewMode,
-    selectedDate,
-    selectDate,
-    selectedDateRange,
-    selectDateRange,
+    setViewMode,
+    VIEW_MODES,
     selectedInstrument,
-    changeInstrument,
-    themeMode,
-    changeTheme,
-    marketData,
-    setMarketData,
-    detailsOpen,
-    toggleDetailsPanel,
-    alerts,
-    addAlert,
-    removeAlert,
-    thresholds,
-    updateThresholds,
+    setSelectedInstrument,
+    INSTRUMENTS,
+    selectedDays,
+    setSelectedDays,
+    selectDate,
+    clearSelection,
+    timeRange,
+    setTimeRange,
+    nextMonth,
+    prevMonth,
+    nextWeek,
+    prevWeek,
+    nextDay,
+    prevDay,
+    goToToday,
+    colorTheme,
+    setColorTheme
   };
 
   return (
@@ -125,5 +155,3 @@ const AppContextProvider = ({ children }) => {
     </AppContext.Provider>
   );
 };
-
-export default AppContextProvider;

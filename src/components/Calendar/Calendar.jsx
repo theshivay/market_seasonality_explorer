@@ -1,445 +1,297 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { Typography, Grid, Paper, Box, styled, useMediaQuery, useTheme } from '@mui/material';
+import React, { useContext, useState, useEffect } from 'react';
+import { 
+  Box, 
+  Grid, 
+  IconButton, 
+  Typography,
+  ButtonGroup,
+  Button,
+  Paper,
+  ToggleButtonGroup,
+  ToggleButton,
+  Tooltip,
+  Zoom,
+  useMediaQuery,
+  useTheme
+} from '@mui/material';
+import { 
+  ChevronLeft, 
+  ChevronRight,
+  Today,
+  ZoomIn,
+  ZoomOut,
+  CalendarViewMonth,
+  CalendarViewWeek,
+  CalendarViewDay,
+  ExpandMore
+} from '@mui/icons-material';
 import moment from 'moment';
-import { AppContext } from '../../context/AppContext.jsx';
-import CalendarCell from './CalendarCell.jsx';
-import CalendarHeader from './CalendarHeader.jsx';
-import CalendarControls from './CalendarControls.jsx';
-import dateUtils from '../../utils/dateUtils.jsx';
-import useSwipeGesture from '../../hooks/useSwipeGesture.jsx';
-import './CalendarStyles.css';
+import { AppContext } from '../../context/AppContext';
+import CalendarHeader from './CalendarHeader';
+import CalendarCell from './CalendarCell';
+import { getCalendarDaysForMonth, getCalendarDaysForWeek } from '../../utils/dateUtils';
+import useMarketData from '../../hooks/useMarketData';
 
-const { getDatesInMonth, getWeeksInMonth, getDayNames } = dateUtils;
-
-const CalendarContainer = styled(Paper)(({ theme }) => ({
-  padding: theme.spacing(2),
-  borderRadius: theme.spacing(1),
-  boxShadow: theme.shadows[3],
-  overflow: 'hidden',
-  height: '100%',
-  display: 'flex',
-  flexDirection: 'column',
-  
-  [theme.breakpoints.down('sm')]: {
-    padding: theme.spacing(1),
-    borderRadius: 0,
-    boxShadow: 'none',
-  },
-  
-  '@media (max-width: 900px) and (orientation: landscape)': {
-    flexDirection: 'row',
-    overflow: 'hidden'
-  }
-}));
-
-const CalendarGrid = styled(Grid)(({ theme }) => ({
-  flex: 1,
-  width: '100%',
-  
-  [theme.breakpoints.down('sm')]: {
-    maxHeight: 'calc(100vh - 200px)', // Allow scrolling on mobile
-    overflowY: 'auto',
-  }
-}));
-
-const Calendar = () => {
-  const { 
-    viewMode, 
-    selectedDate, 
-    selectDate, 
-    selectedDateRange,
-    selectDateRange,
-    selectedInstrument,
-    thresholds
-  } = useContext(AppContext);
-
+const Calendar = ({ onDaySelect }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const [currentMonth, setCurrentMonth] = useState(moment(selectedDate));
-  const [calendarDays, setCalendarDays] = useState([]);
-  const [isSelecting, setIsSelecting] = useState(false);
-  const [selectionStart, setSelectionStart] = useState(null);
+  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
+  
+  const { 
+    currentDate, 
+    nextMonth, 
+    prevMonth,
+    nextWeek,
+    prevWeek,
+    nextDay,
+    prevDay,
+    goToToday,
+    selectedInstrument,
+    viewMode,
+    setViewMode,
+    VIEW_MODES,
+    colorTheme
+  } = useContext(AppContext);
+  
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [calendarWidth, setCalendarWidth] = useState(null);
 
-  // Handle month navigation
-  const nextMonth = () => {
-    setCurrentMonth(currentMonth.clone().add(1, 'month'));
-  };
-
-  const prevMonth = () => {
-    setCurrentMonth(currentMonth.clone().subtract(1, 'month'));
+  // Fetch market data for the current view
+  const { data: marketData, loading } = useMarketData(currentDate, selectedInstrument);
+  
+  // Handle zoom in/out
+  const handleZoomIn = () => {
+    setZoomLevel(prev => Math.min(prev + 0.2, 1.8));
   };
   
-  // Configure swipe gestures for mobile navigation
-  const swipeHandlers = useSwipeGesture(
-    nextMonth, // Swipe left goes to next month
-    prevMonth  // Swipe right goes to previous month
-  );
-
-  // Handle keyboard navigation
-  const handleKeyDown = (e, day) => {
-    if (e.key === 'Enter') {
-      selectDate(day);
-    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || 
-               e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-      e.preventDefault();
-      const currentIndex = calendarDays.findIndex(d => d.isSame(day, 'day'));
-      let newIndex;
-
-      switch(e.key) {
-        case 'ArrowLeft':
-          newIndex = Math.max(0, currentIndex - 1);
-          break;
-        case 'ArrowRight':
-          newIndex = Math.min(calendarDays.length - 1, currentIndex + 1);
-          break;
-        case 'ArrowUp':
-          newIndex = Math.max(0, currentIndex - 7);
-          break;
-        case 'ArrowDown':
-          newIndex = Math.min(calendarDays.length - 1, currentIndex + 7);
-          break;
-        default:
-          newIndex = currentIndex;
-      }
-
-      if (newIndex !== currentIndex && calendarDays[newIndex]) {
-        selectDate(calendarDays[newIndex]);
-      }
-    } else if (e.key === 'Escape') {
-      // Cancel any selection
-      setIsSelecting(false);
-      setSelectionStart(null);
-    }
+  const handleZoomOut = () => {
+    setZoomLevel(prev => Math.max(prev - 0.2, 1));
+  };
+  
+  // Handle view mode change
+  const handleViewModeChange = (event, newMode) => {
+    if (newMode) setViewMode(newMode);
   };
 
-  // Update calendar days when month changes
-  useEffect(() => {
-    let days;
+  // Get next/prev handler based on view mode
+  const getNextHandler = () => {
     switch(viewMode) {
-      case 'weekly':
-        days = getWeeksInMonth(currentMonth.year(), currentMonth.month())
-          .flat()
-          .filter((day, i, arr) => {
-            // Limit to current week +/- 2 weeks
-            const selectedWeekStart = moment(selectedDate).startOf('week');
-            const dayWeekStart = moment(day).startOf('week');
-            const weekDiff = Math.abs(dayWeekStart.diff(selectedWeekStart, 'weeks'));
-            return weekDiff <= 2;
-          });
-        break;
-      case 'monthly':
-        days = getDatesInMonth(currentMonth.year(), currentMonth.month());
-        break;
-      case 'daily':
-      default:
-        // For daily view, show current week
-        days = Array(7).fill(0).map((_, i) => {
-          return moment(selectedDate).startOf('week').add(i, 'days');
-        });
-    }
-    
-    setCalendarDays(days);
-  }, [currentMonth, viewMode, selectedDate]);
-
-  // Handle date selection and range selection with improved UX
-  const handleDateClick = (day) => {
-    // Handle click with modifier keys for special selection behaviors
-    if (window.event && window.event.shiftKey && selectionStart) {
-      // Shift+Click extends the current selection
-      const startDate = selectionStart.isBefore(day) ? selectionStart : day;
-      const endDate = selectionStart.isBefore(day) ? day : selectionStart;
-      
-      selectDateRange(startDate, endDate);
-      // Keep selection mode active for further refinement
-      setIsSelecting(true);
-    } else if (isSelecting) {
-      // Finish selecting range
-      const startDate = selectionStart.isBefore(day) ? selectionStart : day;
-      const endDate = selectionStart.isBefore(day) ? day : selectionStart;
-      
-      selectDateRange(startDate, endDate);
-      setIsSelecting(false);
-      setSelectionStart(null);
-      
-      // Notify user of selection completion with range details
-      const days = endDate.diff(startDate, 'days') + 1;
-      console.log(`Selected range: ${startDate.format('MMM D')} - ${endDate.format('MMM D')} (${days} days)`);
-    } else {
-      // Start selecting range or select single day
-      selectDate(day);
-      setSelectionStart(day);
-      setIsSelecting(true);
+      case VIEW_MODES.MONTH: return nextMonth;
+      case VIEW_MODES.WEEK: return nextWeek;
+      case VIEW_MODES.DAY: return nextDay;
+      default: return nextMonth;
     }
   };
 
-  // Handle mouse enter for range preview with enhanced feedback
-  const handleMouseEnter = (day) => {
-    if (isSelecting && selectionStart) {
-      // Preview range selection
-      const startDate = selectionStart.isBefore(day) ? selectionStart : day;
-      const endDate = selectionStart.isBefore(day) ? day : selectionStart;
-      
-      // Preview range selection for better UX
-      selectDateRange(startDate, endDate);
+  const getPrevHandler = () => {
+    switch(viewMode) {
+      case VIEW_MODES.MONTH: return prevMonth;
+      case VIEW_MODES.WEEK: return prevWeek;
+      case VIEW_MODES.DAY: return prevDay;
+      default: return prevMonth;
     }
   };
   
-  // Handle mouse leave to reset preview if user moves out of calendar
-  const handleMouseLeave = () => {
-    if (isSelecting && selectionStart) {
-      // Reset to just the start date selected when mouse leaves calendar
-      selectDateRange(selectionStart, selectionStart);
-    }
-  };
-
-  // Render calendar based on view mode
-  const renderCalendar = () => {
+  // Format the date title based on view mode
+  const getDateTitle = () => {
     switch(viewMode) {
-      case 'daily':
-        return renderDailyView();
-      case 'weekly':
-        return renderWeeklyView();
-      case 'monthly':
+      case VIEW_MODES.MONTH:
+        return currentDate.format('MMMM YYYY');
+      case VIEW_MODES.WEEK:
+        const weekStart = moment(currentDate).startOf('week');
+        const weekEnd = moment(currentDate).endOf('week');
+        if (weekStart.month() === weekEnd.month()) {
+          return `${weekStart.format('MMM D')} - ${weekEnd.format('D, YYYY')}`;
+        } else if (weekStart.year() === weekEnd.year()) {
+          return `${weekStart.format('MMM D')} - ${weekEnd.format('MMM D, YYYY')}`;
+        } else {
+          return `${weekStart.format('MMM D, YYYY')} - ${weekEnd.format('MMM D, YYYY')}`;
+        }
+      case VIEW_MODES.DAY:
+        return currentDate.format('dddd, MMMM D, YYYY');
       default:
-        return renderMonthlyView();
+        return currentDate.format('MMMM YYYY');
+    }
+  };
+  
+  // Generate calendar days based on view mode
+  const generateCalendarDays = () => {
+    const startDay = moment(currentDate).startOf('month').startOf('week');
+    switch(viewMode) {
+      case VIEW_MODES.DAY:
+        return [currentDate.clone()];
+        
+      case VIEW_MODES.WEEK:
+        return getCalendarDaysForWeek(currentDate);
+        
+      case VIEW_MODES.MONTH:
+      default:
+        return getCalendarDaysForMonth(currentDate);
     }
   };
 
-  // Render daily view (improved with multi-day navigation and hourly breakdown)
-  const renderDailyView = () => {
-    // Get the days of the current week for navigation context
-    const startOfWeek = moment(selectedDate).startOf('week');
-    const daysOfWeek = Array(7).fill(0).map((_, i) => 
-      startOfWeek.clone().add(i, 'days')
-    );
-    
-    // Daily view shows hours of selected day
-    // On mobile, only show business hours to save space
-    const hourRange = isMobile ? 
-      [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20] : // Business hours for mobile
-      Array(24).fill(0).map((_, i) => i); // All 24 hours for desktop
-    
-    const hours = hourRange.map(i => {
-      return moment(selectedDate).startOf('day').add(i, 'hours');
-    });
+  const days = generateCalendarDays();
 
-    return (
-      <>
-        {/* Week day navigation bar */}
-        <Grid container spacing={0} sx={{ mb: 1 }}>
-          {daysOfWeek.map((day, index) => (
-            <Grid 
-              item 
-              xs={12/7} 
-              key={index} 
-              onClick={() => selectDate(day)}
-              sx={{
-                textAlign: 'center',
-                py: 1,
-                cursor: 'pointer',
-                bgcolor: selectedDate.isSame(day, 'day') ? 'primary.light' : 'transparent',
-                color: selectedDate.isSame(day, 'day') ? 'primary.contrastText' : 
-                       day.isSame(moment(), 'day') ? 'secondary.main' : 'text.primary',
-                fontWeight: day.isSame(moment(), 'day') ? 'bold' : 'normal',
-                '&:hover': {
-                  bgcolor: 'action.hover'
-                },
-                borderBottom: selectedDate.isSame(day, 'day') ? '2px solid' : 'none',
-                borderColor: 'primary.main'
-              }}
-            >
-              <Typography variant={isMobile ? 'caption' : 'body2'}>
-                {day.format('ddd')}
-              </Typography>
-              <Typography variant={isMobile ? 'body2' : 'body1'} sx={{ fontWeight: 'bold' }}>
-                {day.format('D')}
-              </Typography>
-            </Grid>
-          ))}
-        </Grid>
-        
-        {/* Current day's hourly breakdown */}
-        <Box sx={{ mt: 2, mb: 1 }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-            {selectedDate.format('dddd, MMMM D, YYYY')}
-          </Typography>
-        </Box>
-        
-        <Grid 
-          container 
-          spacing={isMobile ? 0.5 : 1} 
-          sx={{
-            maxHeight: isMobile ? 'calc(100vh - 230px)' : 'auto',
-            overflowY: isMobile ? 'auto' : 'visible'
-          }}
-        >
-          {hours.map((hour, index) => (
-            <Grid item xs={12} key={index}>
-              <CalendarCell 
-                date={hour}
-                isSelected={false}
-                isToday={moment().isSame(hour, 'hour')}
-                isCurrentMonth={true}
-                displayMode="hourly"
-                onKeyDown={(e) => handleKeyDown(e, hour)}
-                onClick={() => handleDateClick(hour)} // Enable selection in hourly view
-                onMouseEnter={() => handleMouseEnter(hour)}
-                instrument={selectedInstrument}
-                thresholds={thresholds}
-              />
-            </Grid>
-          ))}
-        </Grid>
-      </>
-    );
-  };
-
-  // Render weekly view
-  const renderWeeklyView = () => {
-    const dayNames = getDayNames();
-    
-    // On mobile, use abbreviated day names with dates
-    const responsiveDayNames = isMobile 
-      ? dayNames.map(day => day.substring(0, 1)) 
-      : dayNames;
-    
-    return (
-      <>
-        <Grid container spacing={0}>
-          {responsiveDayNames.map((day, index) => (
-            <Grid item xs key={index} sx={{ 
-              textAlign: 'center', 
-              py: isMobile ? 0.5 : 1 
-            }}>
-              <Typography 
-                variant={isMobile ? "caption" : "subtitle2"}
-                sx={{ fontWeight: 'bold' }}
-              >
-                {day}
-              </Typography>
-            </Grid>
-          ))}
-        </Grid>
-        <Grid container spacing={isMobile ? 0.5 : 1}>
-          {calendarDays.map((day, index) => (
-            <Grid item xs={12 / 7} key={index}>
-              <CalendarCell 
-                date={day}
-                isSelected={selectedDate.isSame(day, 'day')}
-                isInRange={selectedDateRange[0] && selectedDateRange[1] && 
-                  day.isSameOrAfter(selectedDateRange[0], 'day') && 
-                  day.isSameOrBefore(selectedDateRange[1], 'day')}
-                isToday={moment().isSame(day, 'day')}
-                isCurrentMonth={day.month() === currentMonth.month()}
-                displayMode="daily"
-                onKeyDown={(e) => handleKeyDown(e, day)}
-                onClick={() => handleDateClick(day)}
-                onMouseEnter={() => handleMouseEnter(day)}
-                instrument={selectedInstrument}
-                thresholds={thresholds}
-              />
-            </Grid>
-          ))}
-        </Grid>
-      </>
-    );
-  };
-
-  // Render monthly view
-  const renderMonthlyView = () => {
-    const dayNames = getDayNames();
-    const weeks = getWeeksInMonth(currentMonth.year(), currentMonth.month());
-    
-    // On mobile, use abbreviated day names
-    const responsiveDayNames = isMobile 
-      ? dayNames.map(day => day.substring(0, 1)) 
-      : dayNames;
-    
-    return (
-      <>
-        <Grid container spacing={0}>
-          {responsiveDayNames.map((day, index) => (
-            <Grid item xs key={index} sx={{ 
-              textAlign: 'center', 
-              py: isMobile ? 0.5 : 1 
-            }}>
-              <Typography 
-                variant={isMobile ? "caption" : "subtitle2"}
-                sx={{ fontWeight: 'bold' }}
-              >
-                {day}
-              </Typography>
-            </Grid>
-          ))}
-        </Grid>
-        {weeks.map((week, weekIndex) => (
-          <Grid container spacing={isMobile ? 0.5 : 1} key={weekIndex}>
-            {week.map((day, dayIndex) => (
-              <Grid item xs={12 / 7} key={dayIndex}>
-                <CalendarCell 
-                  date={day}
-                  isSelected={selectedDate.isSame(day, 'day')}
-                  isInRange={selectedDateRange[0] && selectedDateRange[1] && 
-                    day.isSameOrAfter(selectedDateRange[0], 'day') && 
-                    day.isSameOrBefore(selectedDateRange[1], 'day')}
-                  isToday={moment().isSame(day, 'day')}
-                  isCurrentMonth={day.month() === currentMonth.month()}
-                  displayMode="daily"
-                  onKeyDown={(e) => handleKeyDown(e, day)}
-                  onClick={() => handleDateClick(day)}
-                  onMouseEnter={() => handleMouseEnter(day)}
-                  instrument={selectedInstrument}
-                  thresholds={thresholds}
-                />
-              </Grid>
-            ))}
-          </Grid>
-        ))}
-      </>
-    );
-  };
-
-  // Adjust calendar for mobile display
-  const renderCalendarForDevice = () => {
-    // Show less information on mobile
-    if (isMobile) {
-      return (
-        <div {...swipeHandlers}>
-          {renderCalendar()}
-        </div>
-      );
-    } else {
-      return renderCalendar();
+  // Calculate grid columns based on view mode
+  const getGridColumns = () => {
+    switch(viewMode) {
+      case VIEW_MODES.DAY:
+        return 1;
+      case VIEW_MODES.WEEK:
+        return 7;
+      case VIEW_MODES.MONTH:
+      default:
+        return 7;
     }
+  };
+
+  // Apply zoom effect to grid
+  const gridStyle = {
+    transform: `scale(${zoomLevel})`,
+    transformOrigin: 'top center',
+    transition: 'transform 0.3s ease',
   };
 
   return (
-    <CalendarContainer className="calendar-container">
-      <div className={isMobile ? "calendar-sidebar" : ""}>
-        {/* Calendar Header with month name and navigation */}
-        <CalendarHeader 
-          currentDate={currentMonth}
-          onPrevMonth={prevMonth}
-          onNextMonth={nextMonth}
-          viewMode={viewMode}
-        />
-        
-        {/* Calendar Controls for view switching, etc. */}
-        <CalendarControls />
-      </div>
-      
-      {/* Calendar Grid with swipe gesture support on mobile */}
-      <CalendarGrid 
-        container 
-        direction="column" 
-        spacing={isMobile ? 0.5 : 1}
-        {...swipeHandlers}
-        onMouseLeave={handleMouseLeave}
-        className={`calendar-main scrollable-container ${isMobile ? 'mobile-calendar' : ''}`}
+    <Box 
+      className="calendar-container"
+      sx={{ 
+        overflowX: 'auto',
+        overflowY: 'auto',
+        maxHeight: viewMode === VIEW_MODES.MONTH ? '80vh' : '100%',
+      }}
+    >
+      <Paper 
+        elevation={2} 
+        sx={{ 
+          p: 2, 
+          mb: 2, 
+          borderRadius: 2,
+          background: theme.palette.background.paper,
+          position: 'sticky',
+          top: 0,
+          zIndex: 10,
+        }}
       >
-        {renderCalendarForDevice()}
-      </CalendarGrid>
-    </CalendarContainer>
+        <Box 
+          sx={{ 
+            display: 'flex', 
+            flexDirection: isTablet ? 'column' : 'row',
+            alignItems: isTablet ? 'flex-start' : 'center',
+            justifyContent: 'space-between',
+            gap: 2
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Tooltip title="Previous">
+                <IconButton onClick={getPrevHandler()} color="primary" sx={{ color: theme.palette.text.secondary }}>
+                  <ChevronLeft />
+                </IconButton>
+              </Tooltip>
+              
+              <Typography variant="h6" sx={{ mx: 1, fontWeight: 600, whiteSpace: 'nowrap' }}>
+                {getDateTitle()}
+              </Typography>
+              
+              <Tooltip title="Next">
+                <IconButton onClick={getNextHandler()} color="primary" sx={{ color: theme.palette.text.secondary }}>
+                  <ChevronRight />
+                </IconButton>
+              </Tooltip>
+            </Box>
+
+            <Tooltip title="Go to today">
+              <Button 
+                startIcon={<Today />} 
+                onClick={goToToday}
+                variant="outlined"
+                size="small"
+                sx={{ ml: { xs: 0, md: 2 } }}
+              >
+                Today
+              </Button>
+            </Tooltip>
+          </Box>
+          
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+            <ToggleButtonGroup
+              value={viewMode}
+              exclusive
+              onChange={handleViewModeChange}
+              aria-label="view mode"
+              size={isMobile ? 'small' : 'medium'}
+              sx={{ 
+                '& .MuiToggleButtonGroup-grouped': {
+                  border: '1px solid',
+                  borderColor: theme.palette.divider,
+                }
+              }}
+            >
+              <ToggleButton value={VIEW_MODES.MONTH} aria-label="month view">
+                <Tooltip title="Month View">
+                  <CalendarViewMonth />
+                </Tooltip>
+              </ToggleButton>
+              <ToggleButton value={VIEW_MODES.WEEK} aria-label="week view">
+                <Tooltip title="Week View">
+                  <CalendarViewWeek />
+                </Tooltip>
+              </ToggleButton>
+              <ToggleButton value={VIEW_MODES.DAY} aria-label="day view">
+                <Tooltip title="Day View">
+                  <CalendarViewDay />
+                </Tooltip>
+              </ToggleButton>
+            </ToggleButtonGroup>
+            
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <Tooltip title="Zoom Out">
+                <IconButton onClick={handleZoomOut} disabled={zoomLevel <= 1}>
+                  <ZoomOut />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Zoom In">
+                <IconButton onClick={handleZoomIn} disabled={zoomLevel >= 1.8}>
+                  <ZoomIn />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          </Box>
+        </Box>
+      </Paper>
+      
+      <Paper 
+        elevation={2}
+        sx={{
+          overflow: 'hidden',
+          borderRadius: 2,
+          transition: 'all 0.3s ease',
+        }}
+      >
+        <Box sx={{ overflowX: 'auto', overflowY: 'auto' }}>
+          <Box style={gridStyle}>
+            <Grid container spacing={0} gridColumns={getGridColumns()}>
+              <CalendarHeader viewMode={viewMode} />
+              {days.map((day, index) => (
+                <CalendarCell 
+                  key={index} 
+                  day={day}
+                  viewMode={viewMode}
+                  instrument={selectedInstrument}
+                  marketData={marketData || {}}
+                  loading={loading}
+                  isToday={day && day.isSame && day.isSame(moment(), 'day')}
+                  isCurrentMonth={day && day.month && day.month() === currentDate.month()}
+                  colorTheme={colorTheme}
+                  onDayClick={() => day && onDaySelect && onDaySelect(day)}
+                />
+              ))}
+            </Grid>
+          </Box>
+        </Box>
+      </Paper>
+    </Box>
   );
 };
 

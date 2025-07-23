@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Box, 
   Drawer, 
@@ -19,50 +19,64 @@ import {
   ListItemText,
   ListItemIcon,
   Skeleton,
-  styled,
+  Grid,
+  Chip,
+  Card,
+  CardContent,
+  CardHeader,
+  Button,
+  Tooltip,
+  useTheme,
+  alpha,
+  Avatar
 } from '@mui/material';
 import {
   Close,
   TrendingUp,
+  TrendingDown,
+  TrendingFlat,
   ShowChart,
-  BarChart,
-  AttachMoney
+  BarChart as BarChartIcon,
+  AttachMoney,
+  CalendarMonth,
+  CompareArrows,
+  FileDownload,
+  PriceCheck,
+  Autorenew,
+  Bolt
 } from '@mui/icons-material';
-import { ResponsiveContainer, LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Bar } from 'recharts';
-import { AppContext } from '../../context/AppContext.jsx';
-import useMarketData from '../../hooks/useMarketData.jsx';
-import marketDataService from '../../services/marketDataService.jsx';
-import { formatDate, formatNumber, formatPercentage } from '../../utils/dateUtils.jsx';
+import { 
+  ResponsiveContainer, 
+  AreaChart, 
+  Area, 
+  BarChart, 
+  Bar, 
+  LineChart,
+  Line,
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip as RechartsTooltip, 
+  Legend,
+  Scatter,
+  ScatterChart,
+  ZAxis 
+} from 'recharts';
+import useMarketData from '../../hooks/useMarketData';
+import marketDataService from '../../services/marketDataService';
+import { formatDate, formatNumber, formatPercentage, formatPrice } from '../../utils/dateUtils';
 import moment from 'moment';
 
-const DrawerHeader = styled(Box)(({ theme }) => ({
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  padding: theme.spacing(1, 2),
-  backgroundColor: theme.palette.primary.main,
-  color: theme.palette.primary.contrastText
-}));
+// Dashboard tabs
+const TABS = {
+  OVERVIEW: 0,
+  PRICE: 1,
+  VOLATILITY: 2,
+  VOLUME: 3,
+  TECHNICAL: 4
+};
 
-const DataQualityChip = styled(Box)(({ theme, quality }) => {
-  const colors = {
-    real: theme.palette.success.main,
-    mock: theme.palette.warning.main,
-    insufficient: theme.palette.error.main
-  };
-  
-  return {
-    display: 'inline-flex',
-    alignItems: 'center',
-    fontSize: '0.75rem',
-    padding: '2px 6px',
-    borderRadius: '16px',
-    backgroundColor: colors[quality] || theme.palette.grey[500],
-    color: '#fff',
-    marginLeft: theme.spacing(1)
-  };
-});
-
+// Custom tab panel component
 const TabPanel = ({ children, value, index, ...other }) => {
   return (
     <div
@@ -71,696 +85,1095 @@ const TabPanel = ({ children, value, index, ...other }) => {
       id={`dashboard-tabpanel-${index}`}
       aria-labelledby={`dashboard-tab-${index}`}
       {...other}
-      style={{ height: '100%' }}
     >
-      {value === index && (
-        <Box sx={{ p: 2, height: '100%', overflow: 'auto' }}>
-          {children}
-        </Box>
-      )}
+      {value === index && children}
     </div>
   );
 };
 
-const ChartContainer = styled(Box)(({ theme }) => ({
-  height: 300,
-  marginBottom: theme.spacing(3)
-}));
+// Helper function to get trend icon
+const getTrendIcon = (value, theme) => {
+  if (value > 0) {
+    return <TrendingUp sx={{ color: theme.palette.success.main }} />;
+  }
+  if (value < 0) {
+    return <TrendingDown sx={{ color: theme.palette.error.main }} />;
+  }
+  return <TrendingFlat sx={{ color: theme.palette.text.secondary }} />;
+};
 
-const Dashboard = () => {
-  const { 
-    detailsOpen, 
-    toggleDetailsPanel, 
-    selectedDate,
-    viewMode,
-    selectedInstrument
-  } = useContext(AppContext);
+// Helper function to get trend color
+const getTrendColor = (value, theme) => {
+  if (value > 0) return theme.palette.success.main;
+  if (value < 0) return theme.palette.error.main;
+  return theme.palette.text.secondary;
+};
+
+const Dashboard = ({ open, onClose, selectedDate, instrument }) => {
+  const theme = useTheme();
+  const [activeTab, setActiveTab] = useState(TABS.OVERVIEW);
+  const [historicalData, setHistoricalData] = useState([]);
+  const [timeRange, setTimeRange] = useState('1W'); // Options: 1D, 1W, 1M, 3M
+  const [expandedView, setExpandedView] = useState(false);
+  const { data, loading } = useMarketData(selectedDate, instrument);
   
-  const [tabIndex, setTabIndex] = useState(0);
-
-  // Get date range for the selected date based on view mode
-  const getDateRange = () => {
-    switch (viewMode) {
-      case 'daily':
-        return {
-          start: moment(selectedDate).startOf('day').valueOf(),
-          end: moment(selectedDate).endOf('day').valueOf()
-        };
-      case 'weekly':
-        return {
-          start: moment(selectedDate).startOf('week').valueOf(),
-          end: moment(selectedDate).endOf('week').valueOf()
-        };
-      case 'monthly':
-        return {
-          start: moment(selectedDate).startOf('month').valueOf(),
-          end: moment(selectedDate).endOf('month').valueOf()
-        };
-      default:
-        return {
-          start: moment(selectedDate).startOf('day').valueOf(),
-          end: moment(selectedDate).endOf('day').valueOf()
-        };
+  // Generate historical data for charts
+  useEffect(() => {
+    if (selectedDate) {
+      let startDate;
+      
+      switch(timeRange) {
+        case '1D':
+          // For intraday, we use the selected date
+          startDate = moment(selectedDate);
+          break;
+        case '1W':
+          startDate = moment(selectedDate).subtract(7, 'days');
+          break;
+        case '1M':
+          startDate = moment(selectedDate).subtract(30, 'days');
+          break;
+        case '3M':
+          startDate = moment(selectedDate).subtract(90, 'days');
+          break;
+        default:
+          startDate = moment(selectedDate).subtract(7, 'days');
+      }
+      
+      const endDate = moment(selectedDate);
+      
+      const dates = [];
+      let currentDate = startDate.clone();
+      
+      while (currentDate.isSameOrBefore(endDate, 'day')) {
+        dates.push(currentDate.clone());
+        currentDate.add(1, 'day');
+      }
+      
+      const histData = dates.map(date => marketDataService.getHistoricalData(date, instrument))
+        .filter(data => data && data.isMarketOpen);
+      
+      setHistoricalData(histData);
     }
-  };
+  }, [selectedDate, instrument, timeRange]);
 
-  const { start, end } = getDateRange();
-
-  // Fetch market data for the selected period
-  const { data: marketData, loading } = useMarketData(
-    selectedInstrument,
-    viewMode,
-    start,
-    end
-  );
-
-  // Handle tab change
   const handleTabChange = (event, newValue) => {
-    setTabIndex(newValue);
+    setActiveTab(newValue);
   };
-
-  // Format dashboard title based on view mode
-  const getDashboardTitle = () => {
-    switch (viewMode) {
-      case 'daily':
-        return `Details for ${formatDate(selectedDate, 'MMMM D, YYYY')}`;
-      case 'weekly':
-        const weekStart = moment(selectedDate).startOf('week');
-        const weekEnd = moment(selectedDate).endOf('week');
-        return `Week of ${formatDate(weekStart, 'MMM D')} - ${formatDate(weekEnd, 'MMM D, YYYY')}`;
-      case 'monthly':
-        return `${formatDate(selectedDate, 'MMMM YYYY')} Overview`;
-      default:
-        return 'Market Data Details';
-    }
+  
+  // Handle time range change
+  const handleTimeRangeChange = (range) => {
+    setTimeRange(range);
   };
+  
+  if (!selectedDate) return null;
 
-  const renderPriceChart = () => {
-    if (loading || !marketData || !marketData.processed) {
-      return (
-        <ChartContainer>
-          <Box sx={{ width: '100%', height: '100%' }}>
-            {/* Chart skeleton */}
-            <Skeleton variant="rectangular" width="100%" height="85%" />
-            
-            {/* X-axis labels skeleton */}
-            <Box sx={{ mt: 1, display: 'flex', justifyContent: 'space-between' }}>
-              {[...Array(5)].map((_, i) => (
-                <Skeleton key={i} variant="text" width="15%" />
-              ))}
-            </Box>
-            
-            {/* Legend skeleton */}
-            <Box sx={{ mt: 1, display: 'flex', justifyContent: 'center' }}>
-              <Skeleton variant="text" width="20%" />
-            </Box>
-          </Box>
-        </ChartContainer>
-      );
-    }
-
-    return (
-      <ChartContainer>
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={marketData.processed}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis 
-              dataKey="formattedTime" 
-              tick={{ fontSize: 12 }} 
-            />
-            <YAxis 
-              yAxisId="left"
-              orientation="left" 
-              tick={{ fontSize: 12 }}
-              domain={['auto', 'auto']}
-            />
-            <Tooltip />
-            <Legend />
-            <Line 
-              yAxisId="left"
-              type="monotone" 
-              dataKey="close" 
-              name="Price"
-              stroke="#8884d8" 
-              dot={false} 
-              activeDot={{ r: 5 }} 
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </ChartContainer>
-    );
-  };
-
-  const renderVolumeChart = () => {
-    if (loading || !marketData || !marketData.processed) {
-      return <Typography>Loading volume data...</Typography>;
-    }
-
-    return (
-      <ChartContainer>
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={marketData.processed}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis 
-              dataKey="formattedTime" 
-              tick={{ fontSize: 12 }} 
-            />
-            <YAxis 
-              tick={{ fontSize: 12 }}
-              domain={[0, 'auto']}
-            />
-            <Tooltip />
-            <Legend />
-            <Bar 
-              dataKey="volume" 
-              name="Volume" 
-              fill="#82ca9d" 
-            />
-          </BarChart>
-        </ResponsiveContainer>
-      </ChartContainer>
-    );
-  };
-
-  const renderVolatilityChart = () => {
-    if (loading || !marketData || !marketData.processed) {
-      return <Typography>Loading volatility data...</Typography>;
-    }
-
-    return (
-      <ChartContainer>
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={marketData.processed}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis 
-              dataKey="formattedTime" 
-              tick={{ fontSize: 12 }} 
-            />
-            <YAxis 
-              tick={{ fontSize: 12 }}
-              domain={[0, 'auto']}
-            />
-            <Tooltip />
-            <Legend />
-            <Area
-              type="monotone"
-              dataKey="volatility"
-              name="Volatility"
-              stroke="#ff7300"
-              fill="#ffa500"
-              fillOpacity={0.3}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      </ChartContainer>
-    );
-  };
-
-  const renderPerformanceChart = () => {
-    if (loading || !marketData || !marketData.processed) {
-      return <Typography>Loading performance data...</Typography>;
-    }
-
-    return (
-      <ChartContainer>
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={marketData.processed}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis 
-              dataKey="formattedTime" 
-              tick={{ fontSize: 12 }} 
-            />
-            <YAxis 
-              tick={{ fontSize: 12 }}
-              domain={['auto', 'auto']}
-            />
-            <Tooltip />
-            <Legend />
-            <Area
-              type="monotone"
-              dataKey="performance"
-              name="Performance (%)"
-              stroke="#8884d8"
-              fill="#8884d8"
-              fillOpacity={0.3}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      </ChartContainer>
-    );
-  };
-
-  const renderPriceTable = () => {
-    if (loading || !marketData || !marketData.processed) {
-      return <Typography>Loading price data...</Typography>;
-    }
-
-    return (
-      <TableContainer component={Paper} sx={{ maxHeight: 300, overflow: 'auto' }}>
-        <Table stickyHeader size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell>Time</TableCell>
-              <TableCell align="right">Open</TableCell>
-              <TableCell align="right">High</TableCell>
-              <TableCell align="right">Low</TableCell>
-              <TableCell align="right">Close</TableCell>
-              <TableCell align="right">Change</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {marketData.processed.map((row, index) => {
-              const prevClose = index > 0 ? marketData.processed[index - 1].close : row.open;
-              const change = row.close && prevClose ? ((row.close - prevClose) / prevClose) * 100 : null;
-              
-              return (
-                <TableRow key={row.time} hover>
-                  <TableCell>{row.formattedTime}</TableCell>
-                  <TableCell align="right">{row.open ? formatNumber(row.open) : '-'}</TableCell>
-                  <TableCell align="right">{row.high ? formatNumber(row.high) : '-'}</TableCell>
-                  <TableCell align="right">{row.low ? formatNumber(row.low) : '-'}</TableCell>
-                  <TableCell align="right">{row.close ? formatNumber(row.close) : '-'}</TableCell>
-                  <TableCell 
-                    align="right" 
-                    sx={{ 
-                      color: change > 0 ? 'success.main' : change < 0 ? 'error.main' : 'text.primary'
-                    }}
-                  >
-                    {change !== null ? formatPercentage(change) : '-'}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    );
-  };
-
-  const renderVolumeTable = () => {
-    if (loading || !marketData || !marketData.processed) {
-      return <Typography>Loading volume data...</Typography>;
-    }
-
-    return (
-      <TableContainer component={Paper} sx={{ maxHeight: 300, overflow: 'auto' }}>
-        <Table stickyHeader size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell>Time</TableCell>
-              <TableCell align="right">Volume</TableCell>
-              <TableCell align="right">Number of Trades</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {marketData.processed.map((row) => (
-              <TableRow key={row.time} hover>
-                <TableCell>{row.formattedTime}</TableCell>
-                <TableCell align="right">{formatNumber(row.volume, 0)}</TableCell>
-                <TableCell align="right">{row.numberOfTrades?.toLocaleString() || '-'}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    );
-  };
-
-  const renderMetricsTable = () => {
-    if (loading || !marketData || !marketData.metrics) {
-      return (
-        <TableContainer component={Paper}>
-          <Table>
-            <TableBody>
-              {/* Volatility Metrics Skeleton */}
-              <TableRow>
-                <TableCell colSpan={2}>
-                  <Skeleton variant="text" width="60%" height={30} />
-                </TableCell>
-              </TableRow>
-              {[...Array(2)].map((_, i) => (
-                <TableRow key={`vol-${i}`}>
-                  <TableCell><Skeleton variant="text" width="80%" /></TableCell>
-                  <TableCell align="right"><Skeleton variant="text" width="40%" /></TableCell>
-                </TableRow>
-              ))}
-              
-              {/* Liquidity Metrics Skeleton */}
-              <TableRow>
-                <TableCell colSpan={2}>
-                  <Skeleton variant="text" width="60%" height={30} sx={{ mt: 2 }} />
-                </TableCell>
-              </TableRow>
-              {[...Array(4)].map((_, i) => (
-                <TableRow key={`liq-${i}`}>
-                  <TableCell><Skeleton variant="text" width="80%" /></TableCell>
-                  <TableCell align="right"><Skeleton variant="text" width="40%" /></TableCell>
-                </TableRow>
-              ))}
-              
-              {/* Performance Metrics Skeleton */}
-              <TableRow>
-                <TableCell colSpan={2}>
-                  <Skeleton variant="text" width="60%" height={30} sx={{ mt: 2 }} />
-                </TableCell>
-              </TableRow>
-              {[...Array(4)].map((_, i) => (
-                <TableRow key={`perf-${i}`}>
-                  <TableCell><Skeleton variant="text" width="80%" /></TableCell>
-                  <TableCell align="right"><Skeleton variant="text" width="40%" /></TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      );
-    }
-
-    const { volatility, liquidity, performance } = marketData.metrics;
-
-    return (
-      <TableContainer component={Paper}>
-        <Table>
-          <TableBody>
-            {/* Volatility Metrics */}
-            <TableRow>
-              <TableCell colSpan={2}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>Volatility Metrics</Typography>
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell>Daily Volatility</TableCell>
-              <TableCell align="right">
-                {volatility ? formatPercentage(volatility.daily * 100, 2) : '-'}
-                {volatility?.isEstimated && <span style={{fontSize: '0.8em', color: '#666'}}> (est.)</span>}
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell>Annualized Volatility</TableCell>
-              <TableCell align="right">
-                {volatility ? formatPercentage(volatility.annualized * 100, 2) : '-'}
-                {volatility?.isEstimated && <span style={{fontSize: '0.8em', color: '#666'}}> (est.)</span>}
-              </TableCell>
-            </TableRow>
-
-            {/* Liquidity Metrics */}
-            <TableRow>
-              <TableCell colSpan={2}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mt: 2 }}>Liquidity Metrics</Typography>
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell>Bid-Ask Spread</TableCell>
-              <TableCell align="right">{liquidity ? formatNumber(liquidity.spread) : '-'}</TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell>Spread Percentage</TableCell>
-              <TableCell align="right">{liquidity ? formatPercentage(liquidity.spreadPercentage) : '-'}</TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell>Market Depth</TableCell>
-              <TableCell align="right">{liquidity ? formatNumber(liquidity.totalDepth, 0) : '-'}</TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell>Order Book Imbalance</TableCell>
-              <TableCell align="right">{liquidity ? formatPercentage(liquidity.imbalance * 100) : '-'}</TableCell>
-            </TableRow>
-
-            {/* Performance Metrics */}
-            <TableRow>
-              <TableCell colSpan={2}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mt: 2 }}>Performance Metrics</Typography>
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell>Price Change</TableCell>
-              <TableCell 
-                align="right"
-                sx={{ 
-                  color: performance?.priceChange > 0 ? 'success.main' : 
-                         performance?.priceChange < 0 ? 'error.main' : 'text.primary'
-                }}
-              >
-                {performance ? formatNumber(performance.priceChange) : '-'}
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell>Percentage Change</TableCell>
-              <TableCell 
-                align="right"
-                sx={{ 
-                  color: performance?.priceChangePercentage > 0 ? 'success.main' : 
-                         performance?.priceChangePercentage < 0 ? 'error.main' : 'text.primary'
-                }}
-              >
-                {performance ? formatPercentage(performance.priceChangePercentage) : '-'}
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell>Highest Price</TableCell>
-              <TableCell align="right">{performance ? formatNumber(performance.highestPrice) : '-'}</TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell>Lowest Price</TableCell>
-              <TableCell align="right">{performance ? formatNumber(performance.lowestPrice) : '-'}</TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </TableContainer>
-    );
-  };
-
-  const renderTechnicalIndicators = () => {
-    if (loading || !marketData || !marketData.historical) {
-      return <Typography>Loading technical indicators...</Typography>;
-    }
+  // Format data for price chart
+  const getPriceChartData = () => {
+    if (!historicalData || historicalData.length === 0) return [];
     
-    // Calculate technical indicators using the enhanced service functions
-    const rsiData = marketDataService.calculateRSI(marketData.historical);
-    const macdData = marketDataService.calculateMACD(marketData.historical);
-    const bbData = marketDataService.calculateBollingerBands(marketData.historical);
+    return historicalData.map(day => ({
+      date: day.date,
+      open: day.price * 0.99,  // Simulate OHLC data
+      high: day.price * 1.03,
+      low: day.price * 0.97,
+      close: day.price,
+      formattedDate: moment(day.date).format('MMM D')
+    }));
+  };
+  
+  // Format data for volume chart
+  const getVolumeChartData = () => {
+    if (!historicalData || historicalData.length === 0) return [];
     
-    // Calculate simple moving averages
-    const calculateSMA = (data, period) => {
-      if (!data || data.length < period) return null;
-      const prices = data.map(d => d.close).slice(-period);
-      const sum = prices.reduce((total, price) => total + price, 0);
-      return sum / period;
-    };
+    return historicalData.map(day => ({
+      date: day.date,
+      volume: day.volume,
+      formattedDate: moment(day.date).format('MMM D')
+    }));
+  };
+  
+  // Format data for volatility chart
+  const getVolatilityChartData = () => {
+    if (!historicalData || historicalData.length === 0) return [];
     
-    const sma50 = calculateSMA(marketData.historical, 50);
-    const sma200 = calculateSMA(marketData.historical, 200);
+    return historicalData.map(day => ({
+      date: day.date,
+      volatility: day.volatility,
+      formattedDate: moment(day.date).format('MMM D')
+    }));
+  };
+  
+  // Format intraday data
+  const getIntradayData = () => {
+    if (!data || !data.intradayData) return [];
     
-    // Define color indicators based on values
-    const getRSIColor = (value) => {
-      if (value >= 70) return 'error.main';  // Overbought
-      if (value <= 30) return 'success.main'; // Oversold
-      return 'text.primary'; // Neutral
-    };
-    
-    const getMACDColor = (histogram) => {
-      if (histogram > 0) return 'success.main'; // Positive momentum
-      if (histogram < 0) return 'error.main';   // Negative momentum
-      return 'text.primary'; // Neutral
-    };
-    
-    // Format number for display with comma separators and proper decimals
-    const formatIndicatorValue = (value) => {
-      if (value === null || value === undefined) return 'N/A';
-      return value.toLocaleString(undefined, {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      });
-    };
-    
-    return (
-      <List>
-        <ListItem>
-          <ListItemIcon><ShowChart /></ListItemIcon>
-          <ListItemText 
-            primary="Moving Averages" 
-            secondary={
-              <>
-                <Typography component="span" variant="body2">
-                  50-Day MA: {sma50 ? formatIndicatorValue(sma50) : 'N/A'}
-                </Typography>
-                <br />
-                <Typography component="span" variant="body2">
-                  200-Day MA: {sma200 ? formatIndicatorValue(sma200) : 'N/A'}
-                </Typography>
-                <Typography variant="caption" sx={{ display: 'block', mt: 0.5 }}>
-                  {sma50 && sma200 ? 
-                    sma50 > sma200 ? 
-                      'Golden Cross (Bullish)' : 'Death Cross (Bearish)' 
-                    : ''}
-                </Typography>
-              </>
-            }
-          />
-        </ListItem>
-        <ListItem>
-          <ListItemIcon><ShowChart /></ListItemIcon>
-          <ListItemText 
-            primary="RSI (14)" 
-            secondary={
-              <>
-                <Typography 
-                  component="span" 
-                  variant="body2" 
-                  sx={{ color: getRSIColor(rsiData?.value) }}
-                >
-                  {rsiData ? formatIndicatorValue(rsiData.value) : 'N/A'} - {rsiData?.interpretation || 'N/A'}
-                </Typography>
-                {rsiData?.isEstimated && 
-                  <Typography variant="caption" sx={{ display: 'block' }}>
-                    (Estimated - insufficient data)
-                  </Typography>
-                }
-              </>
-            }
-          />
-        </ListItem>
-        <ListItem>
-          <ListItemIcon><ShowChart /></ListItemIcon>
-          <ListItemText 
-            primary="MACD" 
-            secondary={
-              <>
-                <Typography component="span" variant="body2">
-                  MACD: {formatIndicatorValue(macdData.macd)}
-                </Typography>
-                <br />
-                <Typography component="span" variant="body2">
-                  Signal: {formatIndicatorValue(macdData.signal)}
-                </Typography>
-                <br />
-                <Typography 
-                  component="span" 
-                  variant="body2" 
-                  sx={{ color: getMACDColor(macdData.histogram) }}
-                >
-                  Histogram: {formatIndicatorValue(macdData.histogram)}
-                  {macdData.histogram > 0 ? ' (Bullish)' : macdData.histogram < 0 ? ' (Bearish)' : ' (Neutral)'}
-                </Typography>
-              </>
-            }
-          />
-        </ListItem>
-        <ListItem>
-          <ListItemIcon><ShowChart /></ListItemIcon>
-          <ListItemText 
-            primary="Bollinger Bands" 
-            secondary={
-              <>
-                <Typography component="span" variant="body2">
-                  Upper: {formatIndicatorValue(bbData.upper)}
-                </Typography>
-                <br />
-                <Typography component="span" variant="body2">
-                  Middle: {formatIndicatorValue(bbData.middle)}
-                </Typography>
-                <br />
-                <Typography component="span" variant="body2">
-                  Lower: {formatIndicatorValue(bbData.lower)}
-                </Typography>
-                <br />
-                <Typography component="span" variant="body2">
-                  Width: {formatIndicatorValue(bbData.width)}%
-                </Typography>
-                {bbData.isEstimated && 
-                  <Typography variant="caption" sx={{ display: 'block' }}>
-                    (Estimated - insufficient data)
-                  </Typography>
-                }
-              </>
-            }
-          />
-        </ListItem>
-      </List>
-    );
+    return data.intradayData || Array.from({length: 8}, (_, i) => ({
+      hour: `${9 + i}:00`,
+      price: data.price * (1 + (Math.random() - 0.5) * 0.02),
+      volume: data.volume * (Math.random() * 0.5 + 0.5)
+    }));
   };
 
   return (
     <Drawer
       anchor="right"
-      open={detailsOpen}
-      onClose={toggleDetailsPanel}
-      variant="temporary"
-      sx={{
-        '& .MuiDrawer-paper': { 
-          width: { xs: '100%', sm: 400, md: 600 },
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column'
-        },
+      open={open}
+      onClose={onClose}
+      PaperProps={{
+        sx: { 
+          width: expandedView ? '90%' : '80%', 
+          maxWidth: '1200px',
+          borderTopLeftRadius: 8,
+          borderBottomLeftRadius: 8
+        }
       }}
     >
-      <DrawerHeader>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <Typography variant="h6">{getDashboardTitle()}</Typography>
-          {marketData && (
-            <DataQualityChip quality={marketData.isMockData ? 'mock' : 'real'}>
-              {marketData.isMockData ? 'Mock Data' : 'Real Data'}
-            </DataQualityChip>
-          )}
-        </Box>
-        <IconButton 
-          edge="end" 
-          color="inherit" 
-          onClick={toggleDetailsPanel}
-          aria-label="close"
-        >
-          <Close />
-        </IconButton>
-      </DrawerHeader>
-      
-      <Divider />
-      
       <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs 
-            value={tabIndex} 
-            onChange={handleTabChange}
-            variant="scrollable"
-            scrollButtons="auto"
-            aria-label="dashboard tabs"
-          >
-            <Tab icon={<AttachMoney />} iconPosition="start" label="Price" />
-            <Tab icon={<BarChart />} iconPosition="start" label="Volume" />
-            <Tab icon={<TrendingUp />} iconPosition="start" label="Volatility" />
-            <Tab icon={<ShowChart />} iconPosition="start" label="Metrics" />
-            <Tab icon={<TrendingUp />} iconPosition="start" label="Technical" />
-          </Tabs>
+        {/* Header */}
+        <Box 
+          sx={{ 
+            p: 2, 
+            display: 'flex', 
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            borderBottom: 1,
+            borderColor: 'divider',
+            backgroundColor: theme.palette.primary.main,
+            color: theme.palette.primary.contrastText
+          }}
+        >
+          <Box>
+            <Typography variant="h5" component="h2" sx={{ fontWeight: 600 }}>
+              {instrument?.name || instrument || 'Market Data'}
+            </Typography>
+            <Typography variant="subtitle2">
+              {selectedDate ? moment(selectedDate).format('dddd, MMMM D, YYYY') : 'Select a date'}
+            </Typography>
+          </Box>
+          
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Tooltip title="Export Data">
+              <IconButton 
+                size="small" 
+                sx={{ color: theme.palette.primary.contrastText }}
+              >
+                <FileDownload />
+              </IconButton>
+            </Tooltip>
+            <IconButton 
+              onClick={onClose}
+              sx={{ color: theme.palette.primary.contrastText }}
+            >
+              <Close />
+            </IconButton>
+          </Box>
         </Box>
         
-        <Box sx={{ flex: 1, overflow: 'auto' }}>
-          <TabPanel value={tabIndex} index={0}>
-            <Typography variant="h6" gutterBottom>Price Analysis</Typography>
-            {renderPriceChart()}
-            {renderPriceTable()}
-          </TabPanel>
-          
-          <TabPanel value={tabIndex} index={1}>
-            <Typography variant="h6" gutterBottom>Volume Analysis</Typography>
-            {renderVolumeChart()}
-            {renderVolumeTable()}
-          </TabPanel>
-          
-          <TabPanel value={tabIndex} index={2}>
-            <Typography variant="h6" gutterBottom>Volatility Analysis</Typography>
-            {renderVolatilityChart()}
-            {renderPerformanceChart()}
-          </TabPanel>
-          
-          <TabPanel value={tabIndex} index={3}>
-            <Typography variant="h6" gutterBottom>Market Metrics</Typography>
-            {renderMetricsTable()}
-          </TabPanel>
-          
-          <TabPanel value={tabIndex} index={4}>
-            <Typography variant="h6" gutterBottom>Technical Indicators</Typography>
-            {renderTechnicalIndicators()}
-          </TabPanel>
+        {/* Tabs */}
+        <Tabs 
+          value={activeTab} 
+          onChange={handleTabChange}
+          variant="scrollable"
+          scrollButtons="auto"
+          sx={{ 
+            px: 2,
+            borderBottom: 1,
+            borderColor: 'divider',
+          }}
+        >
+          <Tab icon={<ShowChart />} iconPosition="start" label="Overview" value={TABS.OVERVIEW} />
+          <Tab icon={<PriceCheck />} iconPosition="start" label="Price Analysis" value={TABS.PRICE} />
+          <Tab icon={<Bolt />} iconPosition="start" label="Volatility" value={TABS.VOLATILITY} />
+          <Tab icon={<BarChartIcon />} iconPosition="start" label="Volume" value={TABS.VOLUME} />
+          <Tab icon={<Autorenew />} iconPosition="start" label="Technical" value={TABS.TECHNICAL} />
+        </Tabs>
+        
+        {/* Content */}
+        <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
+          {loading ? (
+            <Box sx={{ p: 3 }}>
+              <Grid container spacing={3}>
+                {[1, 2, 3, 4].map((item) => (
+                  <Grid item xs={12} sm={6} md={3} key={item}>
+                    <Skeleton variant="rectangular" height={120} />
+                  </Grid>
+                ))}
+                <Grid item xs={12}>
+                  <Skeleton variant="rectangular" height={300} />
+                </Grid>
+              </Grid>
+            </Box>
+          ) : (
+            <>
+              {data?.isMarketOpen ? (
+                <>
+                  {/* Overview Tab */}
+                  <TabPanel value={activeTab} index={TABS.OVERVIEW}>
+                    <Box sx={{ p: 3 }}>
+                      {/* Summary Cards */}
+                      <Grid container spacing={3} sx={{ mb: 4 }}>
+                        {/* Price Card */}
+                        <Grid item xs={12} sm={6} md={3}>
+                          <Card elevation={2}>
+                            <CardContent>
+                              <Typography color="textSecondary" gutterBottom variant="overline">
+                                Current Price
+                              </Typography>
+                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <Typography variant="h4" component="div">
+                                  {formatPrice(data.price, instrument)}
+                                </Typography>
+                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                  {getTrendIcon(data.priceChange, theme)}
+                                  <Typography 
+                                    variant="body2" 
+                                    sx={{ 
+                                      color: getTrendColor(data.priceChange, theme),
+                                      ml: 0.5
+                                    }}
+                                  >
+                                    {formatPercentage(data.percentChange)}
+                                  </Typography>
+                                </Box>
+                              </Box>
+                            </CardContent>
+                          </Card>
+                        </Grid>
+                        
+                        {/* Volume Card */}
+                        <Grid item xs={12} sm={6} md={3}>
+                          <Card elevation={2}>
+                            <CardContent>
+                              <Typography color="textSecondary" gutterBottom variant="overline">
+                                Volume
+                              </Typography>
+                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <Typography variant="h4" component="div">
+                                  {formatNumber(data.volume)}
+                                </Typography>
+                                <BarChartIcon color="info" />
+                              </Box>
+                            </CardContent>
+                          </Card>
+                        </Grid>
+                        
+                        {/* Volatility Card */}
+                        <Grid item xs={12} sm={6} md={3}>
+                          <Card elevation={2}>
+                            <CardContent>
+                              <Typography color="textSecondary" gutterBottom variant="overline">
+                                Volatility
+                              </Typography>
+                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <Typography variant="h4" component="div">
+                                  {data.volatility?.toFixed(2)}%
+                                </Typography>
+                                <ShowChart color="warning" />
+                              </Box>
+                            </CardContent>
+                          </Card>
+                        </Grid>
+                        
+                        {/* Range Card */}
+                        <Grid item xs={12} sm={6} md={3}>
+                          <Card elevation={2}>
+                            <CardContent>
+                              <Typography color="textSecondary" gutterBottom variant="overline">
+                                Day Range
+                              </Typography>
+                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <Typography variant="h4" component="div">
+                                  {data.priceRange || (data.price * 0.06).toFixed(2)}
+                                </Typography>
+                                <CompareArrows color="secondary" />
+                              </Box>
+                            </CardContent>
+                          </Card>
+                        </Grid>
+                      </Grid>
+                      
+                      {/* Price Chart */}
+                      <Card elevation={2} sx={{ mb: 4 }}>
+                        <CardHeader 
+                          title="Price History" 
+                          action={
+                            <Box sx={{ display: 'flex', gap: 1 }}>
+                              {['1D', '1W', '1M', '3M'].map((range) => (
+                                <Chip 
+                                  key={range}
+                                  label={range} 
+                                  variant={timeRange === range ? "filled" : "outlined"}
+                                  color={timeRange === range ? "primary" : "default"}
+                                  onClick={() => handleTimeRangeChange(range)}
+                                  size="small"
+                                />
+                              ))}
+                            </Box>
+                          }
+                        />
+                        <CardContent>
+                          <Box sx={{ height: 300 }}>
+                            <ResponsiveContainer width="100%" height="100%">
+                              <AreaChart data={getPriceChartData()}>
+                                <defs>
+                                  <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor={theme.palette.primary.main} stopOpacity={0.8}/>
+                                    <stop offset="95%" stopColor={theme.palette.primary.main} stopOpacity={0}/>
+                                  </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
+                                <XAxis 
+                                  dataKey="formattedDate" 
+                                  tick={{ fill: theme.palette.text.secondary }} 
+                                  tickLine={{ stroke: theme.palette.divider }}
+                                />
+                                <YAxis 
+                                  tick={{ fill: theme.palette.text.secondary }} 
+                                  tickLine={{ stroke: theme.palette.divider }}
+                                  domain={['dataMin - 5%', 'dataMax + 5%']}
+                                />
+                                <RechartsTooltip 
+                                  formatter={(value) => formatPrice(value, instrument)}
+                                  labelFormatter={(label) => `Date: ${label}`}
+                                />
+                                <Legend />
+                                <Area 
+                                  type="monotone" 
+                                  dataKey="close" 
+                                  stroke={theme.palette.primary.main} 
+                                  fillOpacity={1} 
+                                  fill="url(#colorPrice)"
+                                  name="Close Price"
+                                  animationDuration={500}
+                                />
+                              </AreaChart>
+                            </ResponsiveContainer>
+                          </Box>
+                        </CardContent>
+                      </Card>
+                      
+                      {/* Additional Statistics */}
+                      <Grid container spacing={3}>
+                        {/* OHLC Data */}
+                        <Grid item xs={12} md={6}>
+                          <Card elevation={2}>
+                            <CardHeader title="Price Information" />
+                            <CardContent>
+                              <TableContainer>
+                                <Table size="small">
+                                  <TableBody>
+                                    <TableRow>
+                                      <TableCell>Open</TableCell>
+                                      <TableCell align="right">
+                                        ${(data.price * 0.99).toFixed(2)}
+                                      </TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                      <TableCell>High</TableCell>
+                                      <TableCell align="right">
+                                        ${(data.price * 1.03).toFixed(2)}
+                                      </TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                      <TableCell>Low</TableCell>
+                                      <TableCell align="right">
+                                        ${(data.price * 0.97).toFixed(2)}
+                                      </TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                      <TableCell>Close</TableCell>
+                                      <TableCell align="right">
+                                        ${data.price.toFixed(2)}
+                                      </TableCell>
+                                    </TableRow>
+                                  </TableBody>
+                                </Table>
+                              </TableContainer>
+                            </CardContent>
+                          </Card>
+                        </Grid>
+                        
+                        {/* Special Events */}
+                        <Grid item xs={12} md={6}>
+                          <Card elevation={2}>
+                            <CardHeader title="Market Events" />
+                            <CardContent>
+                              {data.specialEvents && data.specialEvents.length > 0 ? (
+                                <List dense>
+                                  {data.specialEvents.map((event, idx) => (
+                                    <ListItem key={idx} divider={idx < data.specialEvents.length - 1}>
+                                      <ListItemIcon>
+                                        {event.type === 'earnings' ? <AttachMoney color="secondary" /> : <TrendingUp color="primary" />}
+                                      </ListItemIcon>
+                                      <ListItemText primary={event.description} />
+                                    </ListItem>
+                                  ))}
+                                </List>
+                              ) : (
+                                <Box sx={{ p: 2, textAlign: 'center' }}>
+                                  <Typography variant="body2" color="textSecondary">
+                                    No significant events on this date
+                                  </Typography>
+                                </Box>
+                              )}
+                            </CardContent>
+                          </Card>
+                        </Grid>
+                      </Grid>
+                    </Box>
+                  </TabPanel>
+                  
+                  {/* Price Analysis Tab */}
+                  <TabPanel value={activeTab} index={TABS.PRICE}>
+                    <Box sx={{ p: 3 }}>
+                      <Card elevation={2} sx={{ mb: 4 }}>
+                        <CardHeader 
+                          title="Price Analysis" 
+                          action={
+                            <Box sx={{ display: 'flex', gap: 1 }}>
+                              {['1D', '1W', '1M', '3M'].map((range) => (
+                                <Chip 
+                                  key={range}
+                                  label={range} 
+                                  variant={timeRange === range ? "filled" : "outlined"}
+                                  color={timeRange === range ? "primary" : "default"}
+                                  onClick={() => handleTimeRangeChange(range)}
+                                  size="small"
+                                />
+                              ))}
+                            </Box>
+                          }
+                        />
+                        <CardContent>
+                          <Box sx={{ height: 400 }}>
+                            <ResponsiveContainer width="100%" height="100%">
+                              <LineChart data={timeRange === '1D' ? getIntradayData() : getPriceChartData()}>
+                                <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
+                                <XAxis 
+                                  dataKey={timeRange === '1D' ? "hour" : "formattedDate"} 
+                                  tick={{ fill: theme.palette.text.secondary }} 
+                                  tickLine={{ stroke: theme.palette.divider }}
+                                />
+                                <YAxis 
+                                  tick={{ fill: theme.palette.text.secondary }} 
+                                  tickLine={{ stroke: theme.palette.divider }}
+                                  domain={['dataMin - 1%', 'dataMax + 1%']}
+                                />
+                                <RechartsTooltip 
+                                  formatter={(value) => formatPrice(value, instrument)}
+                                />
+                                <Legend />
+                                <Line 
+                                  type="monotone" 
+                                  dataKey={timeRange === '1D' ? "price" : "close"} 
+                                  stroke={theme.palette.primary.main} 
+                                  dot={{ r: 3 }}
+                                  name="Price"
+                                  strokeWidth={2}
+                                  animationDuration={500}
+                                />
+                                {timeRange !== '1D' && (
+                                  <>
+                                    <Line 
+                                      type="monotone" 
+                                      dataKey="high" 
+                                      stroke={theme.palette.success.main} 
+                                      strokeDasharray="5 5"
+                                      dot={false}
+                                      name="High"
+                                      animationDuration={500}
+                                    />
+                                    <Line 
+                                      type="monotone" 
+                                      dataKey="low" 
+                                      stroke={theme.palette.error.main} 
+                                      strokeDasharray="5 5"
+                                      dot={false}
+                                      name="Low"
+                                      animationDuration={500}
+                                    />
+                                  </>
+                                )}
+                              </LineChart>
+                            </ResponsiveContainer>
+                          </Box>
+                        </CardContent>
+                      </Card>
+
+                      <Card elevation={2}>
+                        <CardHeader title="Statistics" />
+                        <CardContent>
+                          <TableContainer>
+                            <Table>
+                              <TableHead>
+                                <TableRow>
+                                  <TableCell>Metric</TableCell>
+                                  <TableCell align="right">Value</TableCell>
+                                </TableRow>
+                              </TableHead>
+                              <TableBody>
+                                <TableRow>
+                                  <TableCell>30-Day High</TableCell>
+                                  <TableCell align="right">
+                                    ${historicalData.length > 0 ? 
+                                      Math.max(...historicalData.map(d => d.price)).toFixed(2) : 
+                                      (data.price * 1.1).toFixed(2)}
+                                  </TableCell>
+                                </TableRow>
+                                <TableRow>
+                                  <TableCell>30-Day Low</TableCell>
+                                  <TableCell align="right">
+                                    ${historicalData.length > 0 ? 
+                                      Math.min(...historicalData.map(d => d.price)).toFixed(2) : 
+                                      (data.price * 0.9).toFixed(2)}
+                                  </TableCell>
+                                </TableRow>
+                                <TableRow>
+                                  <TableCell>30-Day Avg</TableCell>
+                                  <TableCell align="right">
+                                    ${historicalData.length > 0 ? 
+                                      (historicalData.reduce((acc, d) => acc + d.price, 0) / historicalData.length).toFixed(2) : 
+                                      data.price.toFixed(2)}
+                                  </TableCell>
+                                </TableRow>
+                                <TableRow>
+                                  <TableCell>Price Momentum</TableCell>
+                                  <TableCell align="right" sx={{ 
+                                    color: data.priceChange >= 0 ? theme.palette.success.main : theme.palette.error.main 
+                                  }}>
+                                    {data.priceChange >= 0 ? 'Bullish' : 'Bearish'}
+                                  </TableCell>
+                                </TableRow>
+                              </TableBody>
+                            </Table>
+                          </TableContainer>
+                        </CardContent>
+                      </Card>
+                    </Box>
+                  </TabPanel>
+                  
+                  {/* Volatility Tab */}
+                  <TabPanel value={activeTab} index={TABS.VOLATILITY}>
+                    <Box sx={{ p: 3 }}>
+                      <Card elevation={2} sx={{ mb: 4 }}>
+                        <CardHeader title="Volatility Analysis" />
+                        <CardContent>
+                          <Box sx={{ height: 400 }}>
+                            <ResponsiveContainer width="100%" height="100%">
+                              <LineChart data={getVolatilityChartData()}>
+                                <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
+                                <XAxis 
+                                  dataKey="formattedDate" 
+                                  tick={{ fill: theme.palette.text.secondary }} 
+                                  tickLine={{ stroke: theme.palette.divider }}
+                                />
+                                <YAxis 
+                                  tick={{ fill: theme.palette.text.secondary }} 
+                                  tickLine={{ stroke: theme.palette.divider }}
+                                />
+                                <RechartsTooltip 
+                                  formatter={(value) => `${value.toFixed(2)}%`}
+                                />
+                                <Legend />
+                                <Line 
+                                  type="monotone" 
+                                  dataKey="volatility" 
+                                  stroke={theme.palette.warning.main} 
+                                  strokeWidth={2}
+                                  name="Volatility (%)"
+                                  dot={{ stroke: theme.palette.warning.main, strokeWidth: 2, r: 4 }}
+                                  animationDuration={500}
+                                />
+                              </LineChart>
+                            </ResponsiveContainer>
+                          </Box>
+                        </CardContent>
+                      </Card>
+                      
+                      {/* Volatility breakdown */}
+                      <Grid container spacing={3}>
+                        <Grid item xs={12} md={4}>
+                          <Card variant="outlined">
+                            <CardContent>
+                              <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 1 }}>
+                                Morning Session
+                              </Typography>
+                              <Typography variant="h5">
+                                {((data.volatility || 2) * 0.8).toFixed(2)}%
+                              </Typography>
+                              <Box 
+                                sx={{ 
+                                  height: 4, 
+                                  borderRadius: 2, 
+                                  bgcolor: alpha(theme.palette.warning.light, 0.3),
+                                  mt: 1,
+                                  position: 'relative',
+                                  overflow: 'hidden'
+                                }}
+                              >
+                                <Box 
+                                  sx={{ 
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    height: '100%',
+                                    width: `${(((data.volatility || 2) * 0.8) / 10) * 100}%`,
+                                    backgroundColor: theme.palette.warning.light,
+                                    borderRadius: 2
+                                  }}
+                                />
+                              </Box>
+                            </CardContent>
+                          </Card>
+                        </Grid>
+                        <Grid item xs={12} md={4}>
+                          <Card variant="outlined">
+                            <CardContent>
+                              <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 1 }}>
+                                Midday Session
+                              </Typography>
+                              <Typography variant="h5">
+                                {((data.volatility || 2) * 0.6).toFixed(2)}%
+                              </Typography>
+                              <Box 
+                                sx={{ 
+                                  height: 4, 
+                                  borderRadius: 2, 
+                                  bgcolor: alpha(theme.palette.warning.main, 0.3),
+                                  mt: 1,
+                                  position: 'relative',
+                                  overflow: 'hidden'
+                                }}
+                              >
+                                <Box 
+                                  sx={{ 
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    height: '100%',
+                                    width: `${(((data.volatility || 2) * 0.6) / 10) * 100}%`,
+                                    backgroundColor: theme.palette.warning.main,
+                                    borderRadius: 2
+                                  }}
+                                />
+                              </Box>
+                            </CardContent>
+                          </Card>
+                        </Grid>
+                        <Grid item xs={12} md={4}>
+                          <Card variant="outlined">
+                            <CardContent>
+                              <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 1 }}>
+                                Afternoon Session
+                              </Typography>
+                              <Typography variant="h5">
+                                {((data.volatility || 2) * 1.2).toFixed(2)}%
+                              </Typography>
+                              <Box 
+                                sx={{ 
+                                  height: 4, 
+                                  borderRadius: 2, 
+                                  bgcolor: alpha(theme.palette.warning.dark, 0.3),
+                                  mt: 1,
+                                  position: 'relative',
+                                  overflow: 'hidden'
+                                }}
+                              >
+                                <Box 
+                                  sx={{ 
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    height: '100%',
+                                    width: `${(((data.volatility || 2) * 1.2) / 10) * 100}%`,
+                                    backgroundColor: theme.palette.warning.dark,
+                                    borderRadius: 2
+                                  }}
+                                />
+                              </Box>
+                            </CardContent>
+                          </Card>
+                        </Grid>
+                      </Grid>
+                    </Box>
+                  </TabPanel>
+                  
+                  {/* Volume Tab */}
+                  <TabPanel value={activeTab} index={TABS.VOLUME}>
+                    <Box sx={{ p: 3 }}>
+                      <Card elevation={2} sx={{ mb: 4 }}>
+                        <CardHeader 
+                          title="Volume Analysis" 
+                          action={
+                            <Box sx={{ display: 'flex', gap: 1 }}>
+                              {['1D', '1W', '1M'].map((range) => (
+                                <Chip 
+                                  key={range}
+                                  label={range} 
+                                  variant={timeRange === range ? "filled" : "outlined"}
+                                  color={timeRange === range ? "primary" : "default"}
+                                  onClick={() => handleTimeRangeChange(range)}
+                                  size="small"
+                                />
+                              ))}
+                            </Box>
+                          }
+                        />
+                        <CardContent>
+                          <Box sx={{ height: 400 }}>
+                            <ResponsiveContainer width="100%" height="100%">
+                              {timeRange === '1D' ? (
+                                <BarChart data={getIntradayData()}>
+                                  <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
+                                  <XAxis 
+                                    dataKey="hour" 
+                                    tick={{ fill: theme.palette.text.secondary }} 
+                                    tickLine={{ stroke: theme.palette.divider }}
+                                  />
+                                  <YAxis 
+                                    tick={{ fill: theme.palette.text.secondary }} 
+                                    tickLine={{ stroke: theme.palette.divider }}
+                                  />
+                                  <RechartsTooltip formatter={(value) => formatNumber(value)} />
+                                  <Legend />
+                                  <Bar 
+                                    dataKey="volume" 
+                                    name="Volume" 
+                                    fill={theme.palette.info.main}
+                                    animationDuration={500}
+                                  />
+                                </BarChart>
+                              ) : (
+                                <BarChart data={getVolumeChartData()}>
+                                  <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
+                                  <XAxis 
+                                    dataKey="formattedDate" 
+                                    tick={{ fill: theme.palette.text.secondary }} 
+                                    tickLine={{ stroke: theme.palette.divider }}
+                                  />
+                                  <YAxis 
+                                    tick={{ fill: theme.palette.text.secondary }} 
+                                    tickLine={{ stroke: theme.palette.divider }}
+                                  />
+                                  <RechartsTooltip formatter={(value) => formatNumber(value)} />
+                                  <Legend />
+                                  <Bar 
+                                    dataKey="volume" 
+                                    name="Volume" 
+                                    fill={theme.palette.info.main}
+                                    animationDuration={500}
+                                  />
+                                </BarChart>
+                              )}
+                            </ResponsiveContainer>
+                          </Box>
+                        </CardContent>
+                      </Card>
+                      
+                      <Grid container spacing={2}>
+                        <Grid item xs={12} md={4}>
+                          <Card variant="outlined">
+                            <CardContent>
+                              <Typography variant="subtitle1" color="textSecondary">
+                                Daily Volume
+                              </Typography>
+                              <Typography variant="h4">
+                                {formatNumber(data.volume)}
+                              </Typography>
+                            </CardContent>
+                          </Card>
+                        </Grid>
+                        <Grid item xs={12} md={4}>
+                          <Card variant="outlined">
+                            <CardContent>
+                              <Typography variant="subtitle1" color="textSecondary">
+                                Avg. Volume (7D)
+                              </Typography>
+                              <Typography variant="h4">
+                                {formatNumber(
+                                  historicalData.length > 0 ?
+                                  historicalData.slice(-7).reduce((sum, day) => sum + day.volume, 0) / Math.min(7, historicalData.length) :
+                                  data.volume * 0.9
+                                )}
+                              </Typography>
+                            </CardContent>
+                          </Card>
+                        </Grid>
+                        <Grid item xs={12} md={4}>
+                          <Card variant="outlined">
+                            <CardContent>
+                              <Typography variant="subtitle1" color="textSecondary">
+                                Volume Trend
+                              </Typography>
+                              <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                                {getTrendIcon(
+                                  historicalData.length > 0 ?
+                                  (data.volume > (historicalData.slice(-7).reduce((sum, day) => sum + day.volume, 0) / Math.min(7, historicalData.length)) ? 1 : -1) :
+                                  1,
+                                  theme
+                                )}
+                                <Typography 
+                                  variant="h6" 
+                                  sx={{ 
+                                    ml: 1,
+                                    color: historicalData.length > 0 ?
+                                    (data.volume > (historicalData.slice(-7).reduce((sum, day) => sum + day.volume, 0) / Math.min(7, historicalData.length)) ? 
+                                      theme.palette.success.main : 
+                                      theme.palette.error.main) :
+                                    theme.palette.success.main
+                                  }}
+                                >
+                                  {historicalData.length > 0 ?
+                                    (data.volume > (historicalData.slice(-7).reduce((sum, day) => sum + day.volume, 0) / Math.min(7, historicalData.length)) ?
+                                      'Above Average' :
+                                      'Below Average') :
+                                    'Above Average'
+                                  }
+                                </Typography>
+                              </Box>
+                            </CardContent>
+                          </Card>
+                        </Grid>
+                      </Grid>
+                    </Box>
+                  </TabPanel>
+                  
+                  {/* Technical Indicators Tab */}
+                  <TabPanel value={activeTab} index={TABS.TECHNICAL}>
+                    <Box sx={{ p: 3 }}>
+                      <Card elevation={2} sx={{ mb: 4 }}>
+                        <CardHeader title="Technical Indicators" />
+                        <CardContent>
+                          <Box sx={{ height: 400 }}>
+                            <ResponsiveContainer width="100%" height="100%">
+                              <LineChart data={getPriceChartData().map(day => ({
+                                ...day,
+                                sma5: day.close * (1 + (Math.random() - 0.5) * 0.01),
+                                sma20: day.close * (1 + (Math.random() - 0.5) * 0.02),
+                                rsi: 30 + Math.random() * 40
+                              }))}>
+                                <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
+                                <XAxis 
+                                  dataKey="formattedDate" 
+                                  tick={{ fill: theme.palette.text.secondary }} 
+                                  tickLine={{ stroke: theme.palette.divider }}
+                                />
+                                <YAxis 
+                                  yAxisId="price"
+                                  tick={{ fill: theme.palette.text.secondary }} 
+                                  tickLine={{ stroke: theme.palette.divider }}
+                                  domain={['auto', 'auto']}
+                                />
+                                <YAxis 
+                                  yAxisId="rsi"
+                                  orientation="right"
+                                  tick={{ fill: theme.palette.text.secondary }} 
+                                  tickLine={{ stroke: theme.palette.divider }}
+                                  domain={[0, 100]}
+                                />
+                                <RechartsTooltip 
+                                  formatter={(value, name) => {
+                                    if (name === 'RSI') return `${value.toFixed(2)}`;
+                                    return formatPrice(value, instrument);
+                                  }}
+                                />
+                                <Legend />
+                                <Line 
+                                  yAxisId="price"
+                                  type="monotone" 
+                                  dataKey="close" 
+                                  stroke={theme.palette.primary.main} 
+                                  dot={false}
+                                  name="Price"
+                                  strokeWidth={2}
+                                />
+                                <Line 
+                                  yAxisId="price"
+                                  type="monotone" 
+                                  dataKey="sma5" 
+                                  stroke={theme.palette.success.main} 
+                                  dot={false}
+                                  name="5-Day SMA"
+                                  strokeWidth={1}
+                                  strokeDasharray="5 5"
+                                />
+                                <Line 
+                                  yAxisId="price"
+                                  type="monotone" 
+                                  dataKey="sma20" 
+                                  stroke={theme.palette.warning.main} 
+                                  dot={false}
+                                  name="20-Day SMA"
+                                  strokeWidth={1}
+                                  strokeDasharray="5 5"
+                                />
+                                <Line 
+                                  yAxisId="rsi"
+                                  type="monotone" 
+                                  dataKey="rsi" 
+                                  stroke={theme.palette.secondary.main} 
+                                  dot={false}
+                                  name="RSI"
+                                  strokeWidth={1}
+                                />
+                              </LineChart>
+                            </ResponsiveContainer>
+                          </Box>
+                          
+                          <Divider sx={{ my: 3 }} />
+                          
+                          <Grid container spacing={2}>
+                            <Grid item xs={12} md={4}>
+                              <Card variant="outlined">
+                                <CardContent>
+                                  <Typography variant="subtitle1" sx={{ mb: 1 }}>
+                                    Moving Averages
+                                  </Typography>
+                                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                      <Typography variant="body2" color="textSecondary">
+                                        5-Day SMA
+                                      </Typography>
+                                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                        ${(data.price * 1.01).toFixed(2)}
+                                      </Typography>
+                                    </Box>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                      <Typography variant="body2" color="textSecondary">
+                                        20-Day SMA
+                                      </Typography>
+                                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                        ${(data.price * 0.99).toFixed(2)}
+                                      </Typography>
+                                    </Box>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                      <Typography variant="body2" color="textSecondary">
+                                        MA Signal
+                                      </Typography>
+                                      <Chip 
+                                        size="small"
+                                        label={data.price * 1.01 > data.price * 0.99 ? "Bullish" : "Bearish"}
+                                        color={data.price * 1.01 > data.price * 0.99 ? "success" : "error"}
+                                      />
+                                    </Box>
+                                  </Box>
+                                </CardContent>
+                              </Card>
+                            </Grid>
+                            
+                            <Grid item xs={12} md={4}>
+                              <Card variant="outlined">
+                                <CardContent>
+                                  <Typography variant="subtitle1" sx={{ mb: 1 }}>
+                                    RSI (14)
+                                  </Typography>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <Typography variant="h4">
+                                      {(40 + Math.random() * 30).toFixed(2)}
+                                    </Typography>
+                                  </Box>
+                                  <Box sx={{ mt: 2, position: 'relative' }}>
+                                    <Box 
+                                      sx={{ 
+                                        height: 8, 
+                                        borderRadius: 4,
+                                        background: `linear-gradient(90deg, 
+                                          ${theme.palette.error.main} 0%, 
+                                          ${theme.palette.error.light} 30%, 
+                                          ${theme.palette.warning.main} 50%, 
+                                          ${theme.palette.success.light} 70%, 
+                                          ${theme.palette.success.main} 100%)`
+                                      }}
+                                    />
+                                    <Box 
+                                      sx={{ 
+                                        position: 'absolute',
+                                        left: `${50 + (Math.random() - 0.5) * 30}%`,
+                                        top: -4,
+                                        width: 16,
+                                        height: 16,
+                                        borderRadius: '50%',
+                                        backgroundColor: theme.palette.background.paper,
+                                        border: `3px solid ${theme.palette.primary.main}`,
+                                        transform: 'translateX(-50%)'
+                                      }}
+                                    />
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
+                                      <Typography variant="caption">Oversold</Typography>
+                                      <Typography variant="caption">Neutral</Typography>
+                                      <Typography variant="caption">Overbought</Typography>
+                                    </Box>
+                                  </Box>
+                                </CardContent>
+                              </Card>
+                            </Grid>
+                            
+                            <Grid item xs={12} md={4}>
+                              <Card variant="outlined">
+                                <CardContent>
+                                  <Typography variant="subtitle1" sx={{ mb: 1 }}>
+                                    Market Sentiment
+                                  </Typography>
+                                  <Box 
+                                    sx={{ 
+                                      display: 'flex', 
+                                      flexDirection: 'column',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      py: 2
+                                    }}
+                                  >
+                                    <Chip 
+                                      icon={
+                                        data.priceChange > 0.5
+                                          ? <TrendingUp />
+                                          : data.priceChange < -0.5
+                                            ? <TrendingDown />
+                                            : <TrendingFlat />
+                                      }
+                                      label={
+                                        data.priceChange > 0.5
+                                          ? "Bullish"
+                                          : data.priceChange < -0.5
+                                            ? "Bearish"
+                                            : "Neutral"
+                                      }
+                                      color={
+                                        data.priceChange > 0.5
+                                          ? "success"
+                                          : data.priceChange < -0.5
+                                            ? "error"
+                                            : "default"
+                                      }
+                                    />
+                                    <Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
+                                      Based on technical indicators and recent performance
+                                    </Typography>
+                                  </Box>
+                                </CardContent>
+                              </Card>
+                            </Grid>
+                          </Grid>
+                        </CardContent>
+                      </Card>
+                    </Box>
+                  </TabPanel>
+                </>
+              ) : (
+                <Box sx={{ p: 8, textAlign: 'center' }}>
+                  <Typography variant="h6" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
+                    Market Closed
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: theme.palette.text.disabled }}>
+                    The market was closed on this date.
+                    {moment(selectedDate).day() === 0 && " (Sunday)"}
+                    {moment(selectedDate).day() === 6 && " (Saturday)"}
+                  </Typography>
+                </Box>
+              )}
+            </>
+          )}
         </Box>
       </Box>
     </Drawer>

@@ -1,20 +1,24 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import AppContextProvider from './context/AppContext.jsx';
-import MarketCalendarPage from './pages/MarketCalendarPage.jsx';
-import './App.css';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { CssBaseline, ThemeProvider } from '@mui/material'
+import { AppContextProvider } from './context/AppContext'
+import MarketCalendarPage from './pages/MarketCalendarPage'
+import theme from './theme'
 
 function App() {
   return (
-    <Router>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
       <AppContextProvider>
-        <Routes>
-          <Route path="/calendar" element={<MarketCalendarPage />} />
-          <Route path="/" element={<Navigate to="/calendar" />} />
-        </Routes>
+        <Router>
+          <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
+            <Routes>
+              <Route path="/" element={<MarketCalendarPage />} />
+            </Routes>
+          </div>
+        </Router>
       </AppContextProvider>
-    </Router>
-  );
+    </ThemeProvider>
+  )
 }
 
-export default App;
+export default App

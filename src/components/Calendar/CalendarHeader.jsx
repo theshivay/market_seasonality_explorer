@@ -1,55 +1,77 @@
 import React from 'react';
-import { Box, Typography, IconButton, styled } from '@mui/material';
-import { ChevronLeft, ChevronRight } from '@mui/icons-material';
+import { 
+  Grid, 
+  Typography, 
+  Box,
+  useTheme
+} from '@mui/material';
+import moment from 'moment';
 
-const HeaderContainer = styled(Box)(({ theme }) => ({
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  marginBottom: theme.spacing(2),
-  padding: theme.spacing(1, 0),
+const CalendarHeader = ({ viewMode = 'month' }) => {
+  const theme = useTheme();
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   
-  [theme.breakpoints.down('sm')]: {
-    marginBottom: theme.spacing(1),
-  }
-}));
-
-const HeaderTitle = styled(Typography)(({ theme }) => ({
-  [theme.breakpoints.down('sm')]: {
-    fontSize: '1.2rem', // Smaller font on mobile
-    textAlign: 'center',
-    flex: 1
-  }
-}));
-
-const CalendarHeader = ({ currentDate, onPrevMonth, onNextMonth, viewMode }) => {
-  // Format the header title based on view mode
-  const formatHeaderTitle = () => {
-    switch (viewMode) {
-      case 'daily':
-        return currentDate.format('dddd, MMMM D, YYYY');
-      case 'weekly':
-        const weekStart = currentDate.clone().startOf('week');
-        const weekEnd = currentDate.clone().endOf('week');
-        return `Week of ${weekStart.format('MMMM D')} - ${weekEnd.format('MMMM D, YYYY')}`;
-      case 'monthly':
-      default:
-        return currentDate.format('MMMM YYYY');
-    }
+  // Render day headers for month or week view
+  const renderDayHeaders = () => {
+    return days.map((day, index) => (
+      <Grid 
+        key={index}
+        sx={{
+          textAlign: 'center',
+          py: 1.5,
+          borderBottom: `1px solid ${theme.palette.divider}`,
+          borderRight: index < 6 ? `1px solid ${theme.palette.divider}` : 'none',
+          bgcolor: theme.palette.mode === 'light' 
+            ? theme.palette.grey[50] 
+            : theme.palette.grey[900],
+        }}
+      >
+        <Typography 
+          variant="subtitle2" 
+          sx={{ 
+            fontWeight: 600,
+            color: [0, 6].includes(index) 
+              ? theme.palette.error.main 
+              : theme.palette.text.primary
+          }}
+        >
+          {day}
+        </Typography>
+      </Grid>
+    ));
   };
-
+  
+  // Render hour headers for day view
+  const renderHourHeaders = () => {
+    return (
+      <Grid 
+        item 
+        xs={12}
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          py: 1.5,
+          px: 2,
+          borderBottom: `1px solid ${theme.palette.divider}`,
+          bgcolor: theme.palette.mode === 'light' 
+            ? theme.palette.grey[50] 
+            : theme.palette.grey[900],
+        }}
+      >
+        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+          Time
+        </Typography>
+        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+          Market Activity
+        </Typography>
+      </Grid>
+    );
+  };
+  
   return (
-    <HeaderContainer>
-      <IconButton onClick={onPrevMonth} aria-label="Previous month">
-        <ChevronLeft />
-      </IconButton>
-      <HeaderTitle variant="h5" component="h2">
-        {formatHeaderTitle()}
-      </HeaderTitle>
-      <IconButton onClick={onNextMonth} aria-label="Next month">
-        <ChevronRight />
-      </IconButton>
-    </HeaderContainer>
+    <>
+      {viewMode === 'day' ? renderHourHeaders() : renderDayHeaders()}
+    </>
   );
 };
 

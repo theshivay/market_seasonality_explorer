@@ -1,326 +1,455 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { Box, Typography, Paper, styled, Tooltip, alpha, useMediaQuery, useTheme } from '@mui/material';
+import React, { useState } from 'react';
 import { 
-  ArrowUpward, 
-  ArrowDownward,
-  Remove as NeutralIcon
+  Grid, 
+  Box, 
+  Typography, 
+  Tooltip,
+  useTheme,
+  Paper,
+  alpha,
+  Zoom,
+  Fade,
+  Popper,
+  ClickAwayListener
+} from '@mui/material';
+import { 
+  TrendingUp, 
+  TrendingDown,
+  TrendingFlat,
+  BarChart,
+  StackedLineChart,
+  TimelineOutlined
 } from '@mui/icons-material';
-import { AppContext } from '../../context/AppContext.jsx';
-import useMarketData from '../../hooks/useMarketData.jsx';
-import { formatDate, getVolatilityLevel, getPerformanceLevel } from '../../utils/dateUtils.jsx';
 import moment from 'moment';
+import { 
+  formatNumber, 
+  formatPercentage, 
+  getVolatilityLevel, 
+  getPerformanceLevel,
+  getVolatilityColor,
+  getPerformanceIndicator,
+  formatPrice
+} from '../../utils/dateUtils';
 
-// Styled components
-const CellPaper = styled(Paper)(({ 
-  theme, 
-  isselected, 
-  istoday, 
-  iscurrentmonth, 
-  isinrange,
-  volatilitylevel,
-  performancelevel 
-}) => ({
-  position: 'relative',
-  padding: theme.spacing(1),
-  height: '100%',
-  minHeight: '80px',
-  cursor: 'pointer',
-  display: 'flex',
-  flexDirection: 'column',
-  transition: 'all 0.2s ease',
-  overflow: 'hidden',
-  border: isselected 
-    ? `2px solid ${theme.palette.primary.main}` 
-    : istoday 
-      ? `2px solid ${theme.palette.secondary.main}` 
-      : '2px solid transparent',
-  opacity: iscurrentmonth === 'false' ? 0.5 : 1,
-  backgroundColor: isinrange === 'true' 
-    ? alpha(theme.palette.primary.main, 0.1)
-    : volatilitylevel && theme.palette.volatility[volatilitylevel] 
-      ? alpha(theme.palette.volatility[volatilitylevel], 0.2)
-      : theme.palette.background.paper,
-  '&:hover': {
-    transform: 'scale(1.02)',
-    zIndex: 2,
-    boxShadow: theme.shadows[4],
-  },
-  '&:active': {
-    transform: 'scale(0.98)', // Provide touch feedback
-  },
+// Performance indicator component
+const PerformanceIndicator = ({ value, size = 'small', colorTheme = 'default' }) => {
+  const theme = useTheme();
+  const { direction, color } = getPerformanceIndicator(value, colorTheme);
   
-  // Responsive styles
-  [theme.breakpoints.down('md')]: {
-    minHeight: '70px',
-  },
-  [theme.breakpoints.down('sm')]: {
-    minHeight: '60px',
-    padding: theme.spacing(0.5),
-    fontSize: '0.9em',
-  }
-}));
-
-const DateLabel = styled(Typography)(({ theme, istoday }) => ({
-  fontWeight: istoday ? 'bold' : 'normal',
-  color: istoday ? theme.palette.secondary.main : theme.palette.text.primary,
-  
-  [theme.breakpoints.down('sm')]: {
-    fontSize: '0.9rem',
-  },
-  [theme.breakpoints.down('xs')]: {
-    fontSize: '0.8rem',
-  }
-}));
-
-const Indicator = styled(Box)(({ theme, type, level }) => ({
-  position: 'absolute',
-  top: theme.spacing(1),
-  right: theme.spacing(1),
-  color: level && theme.palette[type][level] ? theme.palette[type][level] : 'inherit',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center'
-}));
-
-const VolumeBar = styled(Box)(({ theme, volume, maxvolume }) => {
-  const height = maxvolume > 0 ? (volume / maxvolume) * 100 : 0;
-  return {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    width: '100%',
-    height: `${Math.min(60, height)}%`,
-    backgroundColor: alpha(theme.palette.primary.main, 0.1),
-    zIndex: 0
-  };
-});
-
-// Patterns for liquidity visualization
-const patterns = {
-  dots: {
-    backgroundImage: 'radial-gradient(circle, rgba(0,0,0,0.1) 1px, transparent 1px)',
-    backgroundSize: '4px 4px'
-  },
-  stripes: {
-    backgroundImage: 'linear-gradient(45deg, rgba(0,0,0,0.1) 25%, transparent 25%, transparent 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1) 75%, transparent 75%, transparent)',
-    backgroundSize: '8px 8px'
-  },
-  gradient: {
-    background: 'linear-gradient(to bottom, rgba(0,0,0,0), rgba(0,0,0,0.1))'
-  }
+  return (
+    <Box 
+      sx={{ 
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      {direction === 'up' && (
+        <TrendingUp 
+          fontSize={size} 
+          sx={{ 
+            color,
+            animation: 'pulse 2s infinite'
+          }} 
+        />
+      )}
+      {direction === 'down' && (
+        <TrendingDown 
+          fontSize={size} 
+          sx={{ color }} 
+        />
+      )}
+      {direction === 'neutral' && (
+        <TrendingFlat 
+          fontSize={size} 
+          sx={{ color }} 
+        />
+      )}
+    </Box>
+  );
 };
 
-const CalendarCell = ({ 
-  date, 
-  isSelected, 
-  isInRange,
-  isToday, 
-  isCurrentMonth,
-  displayMode,
-  onKeyDown,
-  onClick,
-  onMouseEnter,
-  instrument,
-  thresholds
-}) => {
-  const { toggleDetailsPanel } = useContext(AppContext);
-  const [cellData, setCellData] = useState(null);
+// Volume indicator with bars
+const VolumeIndicator = ({ volume, maxVolume = 10000, colorTheme = 'default' }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const normalizedVolume = Math.min(100, Math.max(10, (volume / maxVolume) * 100));
   
-  // Set up date range for market data fetch
-  const startDate = moment(date).startOf('day');
-  const endDate = moment(date).endOf('day');
-  
-  // Fetch market data for this cell
-  const { data: marketData, loading } = useMarketData(
-    instrument, 
-    displayMode, 
-    startDate.valueOf(), 
-    endDate.valueOf()
-  );
-  
-  useEffect(() => {
-    if (marketData && marketData.processed) {
-      setCellData(marketData.processed[0]); // Just take first day's data
+  // Volume bar color based on volume and theme
+  const getVolumeColor = () => {
+    if (colorTheme === 'colorblind') {
+      return normalizedVolume > 70 
+        ? 'rgb(0, 114, 178)' // Blue
+        : 'rgb(86, 180, 233)'; // Light Blue
     }
-  }, [marketData]);
-  
-  // Determine volatility and performance levels
-  const volatilityLevel = cellData?.volatility !== undefined
-    ? getVolatilityLevel(cellData.volatility, thresholds.volatility) 
-    : null;
-  
-  const performanceLevel = cellData?.performance 
-    ? getPerformanceLevel(cellData.performance, thresholds.performance) 
-    : null;
-  
-  // Determine volume relative to max volume (for bar height)
-  const maxVolume = 1000000; // This should ideally be passed down from parent
-  
-  // Render performance indicator arrow
-  const renderPerformanceIndicator = () => {
-    if (!performanceLevel) return null;
     
-    switch (performanceLevel) {
-      case 'positive':
-        return <ArrowUpward fontSize="small" />;
-      case 'negative':
-        return <ArrowDownward fontSize="small" />;
-      case 'neutral':
-      default:
-        return <NeutralIcon fontSize="small" />;
-    }
-  };
-  
-  // Render tooltip content
-  const tooltipContent = () => {
-    if (loading) return "Loading data...";
-    
-    if (!cellData) return "No data available";
-    
-    return (
-      <>
-        <Typography variant="body2"><strong>Date:</strong> {formatDate(date, 'MMM D, YYYY')}</Typography>
-        {cellData.open && (
-          <>
-            <Typography variant="body2"><strong>Open:</strong> {cellData.open.toFixed(2)}</Typography>
-            <Typography variant="body2"><strong>High:</strong> {cellData.high.toFixed(2)}</Typography>
-            <Typography variant="body2"><strong>Low:</strong> {cellData.low.toFixed(2)}</Typography>
-            <Typography variant="body2"><strong>Close:</strong> {cellData.close.toFixed(2)}</Typography>
-          </>
-        )}
-        <Typography variant="body2"><strong>Volume:</strong> {cellData.volume.toLocaleString()}</Typography>
-        {cellData.volatility !== undefined && (
-          <Typography variant="body2">
-            <strong>Volatility:</strong> {cellData.volatility <= 1 
-              ? (cellData.volatility * 100).toFixed(2) 
-              : cellData.volatility.toFixed(2)}%
-          </Typography>
-        )}
-        {cellData.performance && (
-          <Typography variant="body2">
-            <strong>Performance:</strong> {cellData.performance > 0 ? '+' : ''}{cellData.performance.toFixed(2)}%
-          </Typography>
-        )}
-      </>
-    );
-  };
-
-  // Render cell content based on display mode and device size
-  const renderContent = () => {
-    switch (displayMode) {
-      case 'hourly':
-        return (
-          <>
-            <DateLabel variant="body2" istoday={isToday ? 'true' : 'false'}>
-              {formatDate(date, 'HH:mm')}
-            </DateLabel>
-            {cellData && cellData.performance && !isMobile && (
-              <Typography variant="body2" color={performanceLevel && performanceLevel !== 'neutral' ? `performance.${performanceLevel}` : 'textSecondary'}>
-                {cellData.performance > 0 ? '+' : ''}{cellData.performance.toFixed(2)}%
-              </Typography>
-            )}
-          </>
-        );
-      case 'weekly':
-        return (
-          <>
-            <DateLabel variant="body2" istoday={isToday ? 'true' : 'false'}>
-              {`Week ${date.week()}`}
-            </DateLabel>
-            {!isMobile && (
-              <Typography variant="caption">
-                {formatDate(date.startOf('week'), 'MMM D')} - {formatDate(date.endOf('week'), 'MMM D')}
-              </Typography>
-            )}
-          </>
-        );
-      case 'daily':
-      default:
-        return (
-          <>
-            <DateLabel variant="body2" istoday={isToday ? 'true' : 'false'}>
-              {date.date()}
-            </DateLabel>
-            {cellData && cellData.performance && !isMobile && (
-              <Typography 
-                variant={isMobile ? "caption" : "body2"} 
-                color={performanceLevel && performanceLevel !== 'neutral' ? `performance.${performanceLevel}` : 'textSecondary'}
-              >
-                {cellData.performance > 0 ? '+' : ''}{cellData.performance.toFixed(isMobile ? 1 : 2)}%
-              </Typography>
-            )}
-            {/* For mobile only show performance icon, not text */}
-            {isMobile && cellData && performanceLevel && performanceLevel !== 'neutral' && (
-              <Box 
-                sx={{
-                  position: 'absolute',
-                  bottom: '2px',
-                  right: '2px',
-                  width: '8px',
-                  height: '8px',
-                  borderRadius: '50%',
-                  bgcolor: theme.palette.performance[performanceLevel],
-                }}
-              />
-            )}
-          </>
-        );
-    }
-  };
-
-  const handleClick = () => {
-    onClick();
-    toggleDetailsPanel(); // Open details panel when cell is clicked
+    return normalizedVolume > 70 
+      ? theme.palette.primary.main
+      : theme.palette.primary.light;
   };
   
   return (
-    <Tooltip title={tooltipContent()} placement="top" arrow>
-      <CellPaper
-        isselected={isSelected ? 'true' : 'false'}
-        istoday={isToday ? 'true' : 'false'}
-        iscurrentmonth={isCurrentMonth ? 'true' : 'false'}
-        isinrange={isInRange ? 'true' : 'false'}
-        volatilitylevel={volatilityLevel}
-        performancelevel={performanceLevel}
-        onClick={handleClick}
-        onMouseEnter={onMouseEnter}
-        onKeyDown={onKeyDown}
-        tabIndex={0} // Make cell focusable for keyboard navigation
+    <Box 
+      sx={{ 
+        width: '100%',
+        height: '4px',
+        backgroundColor: theme.palette.divider,
+        borderRadius: '2px',
+        overflow: 'hidden',
+        my: 0.5
+      }}
+    >
+      <Box 
+        sx={{
+          width: `${normalizedVolume}%`,
+          height: '100%',
+          backgroundColor: getVolumeColor(),
+          transition: 'width 0.5s ease-in-out',
+        }}
+      />
+    </Box>
+  );
+};
+
+const CalendarCell = ({ 
+  day, 
+  instrument, 
+  viewMode = 'month',
+  marketData = {},
+  loading = false,
+  isToday = false, 
+  isCurrentMonth = true,
+  colorTheme = 'default',
+  onDayClick 
+}) => {
+  const theme = useTheme();
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [showTooltip, setShowTooltip] = useState(false);
+  
+  const dateKey = day?.format('YYYY-MM-DD');
+  const dayData = marketData && dateKey ? (marketData[dateKey] || null) : null;
+  
+  // Cell styling based on conditions
+  const getCellStyle = () => {
+    let style = {
+      height: viewMode === 'month' ? 120 : viewMode === 'week' ? 180 : 'auto',
+      p: 1,
+      cursor: 'pointer',
+      position: 'relative',
+      overflow: 'hidden',
+      transition: 'all 0.2s ease',
+      borderRight: `1px solid ${theme.palette.divider}`,
+      borderBottom: `1px solid ${theme.palette.divider}`,
+      '&:hover': {
+        backgroundColor: alpha(theme.palette.primary.light, 0.1),
+        transform: 'scale(1.01)',
+        zIndex: 1,
+      }
+    };
+    
+    // Today styling
+    if (isToday) {
+      style = {
+        ...style,
+        borderLeft: `3px solid ${theme.palette.primary.main}`,
+      };
+    }
+    
+    // Not current month styling
+    if (!isCurrentMonth) {
+      style = {
+        ...style,
+        opacity: 0.5,
+        backgroundColor: theme.palette.mode === 'light' 
+          ? theme.palette.grey[100] 
+          : theme.palette.grey[900]
+      };
+    }
+    
+    // Set background color based on volatility if day data exists
+    if (dayData && dayData.volatility !== undefined && isCurrentMonth) {
+      style = {
+        ...style,
+        backgroundColor: alpha(getVolatilityColor(dayData.volatility, colorTheme), 0.2)
+      };
+    }
+    
+    return style;
+  };
+  
+  // Show tooltip on hover
+  const handleMouseEnter = (event) => {
+    if (dayData) {
+      setAnchorEl(event.currentTarget);
+      setShowTooltip(true);
+    }
+  };
+  
+  // Hide tooltip on leave
+  const handleMouseLeave = () => {
+    setShowTooltip(false);
+  };
+  
+  // Tooltip close on click away
+  const handleClickAway = () => {
+    setShowTooltip(false);
+  };
+  
+  // Handle click on cell
+  const handleClick = () => {
+    onDayClick && onDayClick(day);
+  };
+  
+  // Day number with indicator for today
+  const renderDayNumber = () => {
+    return (
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          mb: 1
+        }}
       >
-        {/* Date and basic content */}
-        <Box sx={{ position: 'relative', zIndex: 1 }}>
-          {renderContent()}
-        </Box>
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            fontWeight: isToday ? 700 : isCurrentMonth ? 500 : 400,
+            color: isToday ? theme.palette.primary.main : 'inherit'
+          }}
+        >
+          {day.format('D')}
+        </Typography>
         
-        {/* Performance indicator */}
-        <Indicator type="performance" level={performanceLevel}>
-          {renderPerformanceIndicator()}
-        </Indicator>
-        
-        {/* Liquidity pattern */}
-        {cellData && cellData.volume > 0 && (
-          <Box sx={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            opacity: 0.2,
-            ...patterns.dots
-          }} />
-        )}
-        
-        {/* Volume bar */}
-        {cellData && (
-          <VolumeBar 
-            volume={cellData.volume} 
-            maxvolume={maxVolume} 
+        {isToday && (
+          <Box 
+            sx={{ 
+              width: 8, 
+              height: 8, 
+              borderRadius: '50%', 
+              backgroundColor: theme.palette.primary.main,
+              ml: 0.5
+            }}
           />
         )}
-      </CellPaper>
-    </Tooltip>
+      </Box>
+    );
+  };
+  
+  // Render market data indicators if available
+  const renderMarketData = () => {
+    if (loading) {
+      return (
+        <Box sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
+            Loading...
+          </Typography>
+        </Box>
+      );
+    }
+    
+    if (!dayData) return null;
+    
+    return (
+      <Fade in={!!dayData}>
+        <Box sx={{ mt: 1 }}>
+          {/* Price */}
+          <Box sx={{ mb: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
+              {formatPrice(dayData.close, instrument)}
+            </Typography>
+            <PerformanceIndicator value={dayData.performance} colorTheme={colorTheme} />
+          </Box>
+          
+          {/* Volume */}
+          <VolumeIndicator volume={dayData.volume} colorTheme={colorTheme} />
+          
+          {/* Volatility and Liquidity Indicators */}
+          <Box sx={{ display: 'flex', gap: 0.5, mt: 1, flexWrap: 'wrap' }}>
+            {/* Volatility */}
+            <Tooltip title={`Volatility: ${dayData.volatility.toFixed(2)}%`}>
+              <Box 
+                sx={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  px: 0.75,
+                  py: 0.25,
+                  borderRadius: 1,
+                  bgcolor: alpha(getVolatilityColor(dayData.volatility, colorTheme), 0.2),
+                  border: `1px solid ${alpha(getVolatilityColor(dayData.volatility, colorTheme), 0.3)}`,
+                }}
+              >
+                <StackedLineChart 
+                  sx={{ 
+                    fontSize: '0.875rem', 
+                    color: getVolatilityColor(dayData.volatility, colorTheme)
+                  }} 
+                />
+                <Typography 
+                  variant="caption" 
+                  sx={{ 
+                    ml: 0.5,
+                    color: theme.palette.text.secondary,
+                    fontWeight: 500
+                  }}
+                >
+                  {dayData.volatility.toFixed(1)}%
+                </Typography>
+              </Box>
+            </Tooltip>
+            
+            {/* Liquidity */}
+            <Tooltip title={`Volume: ${formatNumber(dayData.volume)}`}>
+              <Box 
+                sx={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  px: 0.75,
+                  py: 0.25,
+                  borderRadius: 1,
+                  bgcolor: alpha(theme.palette.info.main, 0.1),
+                  border: `1px solid ${alpha(theme.palette.info.main, 0.3)}`,
+                }}
+              >
+                <BarChart 
+                  sx={{ 
+                    fontSize: '0.875rem', 
+                    color: theme.palette.info.main
+                  }} 
+                />
+                <Typography 
+                  variant="caption" 
+                  sx={{ 
+                    ml: 0.5,
+                    color: theme.palette.text.secondary,
+                    fontWeight: 500
+                  }}
+                >
+                  {formatNumber(dayData.volume)}
+                </Typography>
+              </Box>
+            </Tooltip>
+          </Box>
+        </Box>
+      </Fade>
+    );
+  };
+  
+  // Enhanced tooltip content
+  const renderTooltipContent = () => {
+    if (!dayData) return null;
+    
+    return (
+      <Box sx={{ p: 1.5 }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+          {day.format('dddd, MMMM D, YYYY')}
+        </Typography>
+        
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          {/* Price info */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 4 }}>
+            <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+              Open: <strong>{formatPrice(dayData.open, instrument)}</strong>
+            </Typography>
+            <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+              Close: <strong>{formatPrice(dayData.close, instrument)}</strong>
+            </Typography>
+          </Box>
+          
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 4 }}>
+            <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+              High: <strong>{formatPrice(dayData.high, instrument)}</strong>
+            </Typography>
+            <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+              Low: <strong>{formatPrice(dayData.low, instrument)}</strong>
+            </Typography>
+          </Box>
+          
+          {/* Performance */}
+          <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
+            <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+              Performance: 
+            </Typography>
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                ml: 1,
+                fontWeight: 600,
+                color: dayData.performance > 0 
+                  ? theme.palette.success.main 
+                  : dayData.performance < 0
+                    ? theme.palette.error.main
+                    : theme.palette.text.primary
+              }}
+            >
+              {formatPercentage(dayData.performance)}
+            </Typography>
+            <PerformanceIndicator value={dayData.performance} colorTheme={colorTheme} />
+          </Box>
+          
+          {/* Volume and Volatility */}
+          <Box sx={{ mt: 0.5 }}>
+            <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+              Volume: <strong>{formatNumber(dayData.volume)}</strong>
+            </Typography>
+            <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+              Volatility: <strong>{dayData.volatility.toFixed(2)}%</strong>
+            </Typography>
+          </Box>
+          
+          <Typography variant="caption" sx={{ color: theme.palette.info.main, mt: 0.5 }}>
+            Click for more details
+          </Typography>
+        </Box>
+      </Box>
+    );
+  };
+  
+  return (
+    <>
+      <Grid 
+        gridSize={viewMode === 'day' ? 12 : 1}
+        sx={getCellStyle()}
+        onClick={handleClick}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+        {renderDayNumber()}
+        {renderMarketData()}
+      </Grid>
+      
+      <Popper
+        open={showTooltip}
+        anchorEl={anchorEl}
+        placement="top"
+        transition
+        modifiers={[
+          {
+            name: 'offset',
+            options: {
+              offset: [0, 10],
+            },
+          },
+        ]}
+        sx={{ zIndex: 1500 }}
+      >
+        {({ TransitionProps }) => (
+          <ClickAwayListener onClickAway={handleClickAway}>
+            <Fade {...TransitionProps} timeout={250}>
+              <Paper 
+                elevation={3}
+                sx={{ 
+                  borderRadius: 1,
+                  maxWidth: 280,
+                  boxShadow: theme.shadows[5]
+                }}
+              >
+                {renderTooltipContent()}
+              </Paper>
+            </Fade>
+          </ClickAwayListener>
+        )}
+      </Popper>
+    </>
   );
 };
 
