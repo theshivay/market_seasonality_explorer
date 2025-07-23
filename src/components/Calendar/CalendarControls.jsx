@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { 
   Box, 
   ToggleButtonGroup, 
@@ -11,7 +11,9 @@ import {
   styled,
   Tooltip,
   useMediaQuery,
-  useTheme
+  useTheme,
+  Menu,
+  ListItemText
 } from '@mui/material';
 import {
   CalendarViewDay,
@@ -20,8 +22,11 @@ import {
   ZoomIn,
   ZoomOut,
   FileDownload,
-  ColorLens
+  ColorLens,
+  DateRange,
+  KeyboardArrowDown
 } from '@mui/icons-material';
+import moment from 'moment';
 import { AppContext } from '../../context/AppContext';
 
 const ControlsContainer = styled(Box)(({ theme }) => ({
@@ -71,6 +76,7 @@ const ControlGroup = styled(Box)(({ theme }) => ({
 const CalendarControls = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const [rangeMenuAnchor, setRangeMenuAnchor] = useState(null);
   
   const { 
     viewMode, 
@@ -78,7 +84,9 @@ const CalendarControls = () => {
     selectedInstrument,
     changeInstrument,
     themeMode,
-    changeTheme
+    changeTheme,
+    selectDateRange,
+    selectDate
   } = useContext(AppContext);
 
   // Available financial instruments
@@ -95,6 +103,50 @@ const CalendarControls = () => {
     { value: 'default', label: 'Default Theme' },
     { value: 'highContrast', label: 'High Contrast' },
     { value: 'colorblindFriendly', label: 'Colorblind Friendly' }
+  ];
+  
+  // Predefined date ranges
+  const predefinedRanges = [
+    { 
+      label: 'Last 7 Days', 
+      value: () => {
+        const end = moment();
+        const start = moment().subtract(6, 'days');
+        return [start, end];
+      }
+    },
+    { 
+      label: 'Last 30 Days', 
+      value: () => {
+        const end = moment();
+        const start = moment().subtract(29, 'days');
+        return [start, end];
+      }
+    },
+    { 
+      label: 'This Month', 
+      value: () => {
+        const end = moment().endOf('month');
+        const start = moment().startOf('month');
+        return [start, end];
+      }
+    },
+    { 
+      label: 'Last Month', 
+      value: () => {
+        const end = moment().subtract(1, 'month').endOf('month');
+        const start = moment().subtract(1, 'month').startOf('month');
+        return [start, end];
+      }
+    },
+    { 
+      label: 'Year to Date', 
+      value: () => {
+        const end = moment();
+        const start = moment().startOf('year');
+        return [start, end];
+      }
+    }
   ];
 
   // Handle view mode change
@@ -211,6 +263,43 @@ const CalendarControls = () => {
             ))}
           </Select>
         </FormControl>
+      </ControlGroup>
+
+      {/* Date Range Selector */}
+      <ControlGroup>
+        <Button
+          variant="outlined"
+          startIcon={<DateRange />}
+          endIcon={<KeyboardArrowDown />}
+          onClick={(event) => setRangeMenuAnchor(event.currentTarget)}
+          size="small"
+          sx={{ 
+            minWidth: isMobile ? '40px' : 'auto',
+            px: isMobile ? 1 : 2,
+            display: { xs: 'none', sm: 'flex' }
+          }}
+        >
+          {isMobile ? '' : 'Date Range'}
+        </Button>
+        <Menu
+          anchorEl={rangeMenuAnchor}
+          open={Boolean(rangeMenuAnchor)}
+          onClose={() => setRangeMenuAnchor(null)}
+        >
+          {predefinedRanges.map((range, index) => (
+            <MenuItem 
+              key={index} 
+              onClick={() => {
+                const [start, end] = range.value();
+                selectDate(start);
+                selectDateRange(start, end);
+                setRangeMenuAnchor(null);
+              }}
+            >
+              <ListItemText primary={range.label} />
+            </MenuItem>
+          ))}
+        </Menu>
       </ControlGroup>
 
       {/* Export Options - Icon only on mobile */}

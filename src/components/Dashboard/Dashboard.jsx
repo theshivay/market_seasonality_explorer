@@ -18,6 +18,7 @@ import {
   ListItem,
   ListItemText,
   ListItemIcon,
+  Skeleton,
   styled,
 } from '@mui/material';
 import {
@@ -30,6 +31,7 @@ import {
 import { ResponsiveContainer, LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Bar } from 'recharts';
 import { AppContext } from '../../context/AppContext.jsx';
 import useMarketData from '../../hooks/useMarketData.jsx';
+import marketDataService from '../../services/marketDataService.jsx';
 import { formatDate, formatNumber, formatPercentage } from '../../utils/dateUtils.jsx';
 import moment from 'moment';
 
@@ -41,6 +43,25 @@ const DrawerHeader = styled(Box)(({ theme }) => ({
   backgroundColor: theme.palette.primary.main,
   color: theme.palette.primary.contrastText
 }));
+
+const DataQualityChip = styled(Box)(({ theme, quality }) => {
+  const colors = {
+    real: theme.palette.success.main,
+    mock: theme.palette.warning.main,
+    insufficient: theme.palette.error.main
+  };
+  
+  return {
+    display: 'inline-flex',
+    alignItems: 'center',
+    fontSize: '0.75rem',
+    padding: '2px 6px',
+    borderRadius: '16px',
+    backgroundColor: colors[quality] || theme.palette.grey[500],
+    color: '#fff',
+    marginLeft: theme.spacing(1)
+  };
+});
 
 const TabPanel = ({ children, value, index, ...other }) => {
   return (
@@ -136,7 +157,26 @@ const Dashboard = () => {
 
   const renderPriceChart = () => {
     if (loading || !marketData || !marketData.processed) {
-      return <Typography>Loading chart data...</Typography>;
+      return (
+        <ChartContainer>
+          <Box sx={{ width: '100%', height: '100%' }}>
+            {/* Chart skeleton */}
+            <Skeleton variant="rectangular" width="100%" height="85%" />
+            
+            {/* X-axis labels skeleton */}
+            <Box sx={{ mt: 1, display: 'flex', justifyContent: 'space-between' }}>
+              {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} variant="text" width="15%" />
+              ))}
+            </Box>
+            
+            {/* Legend skeleton */}
+            <Box sx={{ mt: 1, display: 'flex', justifyContent: 'center' }}>
+              <Skeleton variant="text" width="20%" />
+            </Box>
+          </Box>
+        </ChartContainer>
+      );
     }
 
     return (
@@ -348,7 +388,52 @@ const Dashboard = () => {
 
   const renderMetricsTable = () => {
     if (loading || !marketData || !marketData.metrics) {
-      return <Typography>Loading metrics data...</Typography>;
+      return (
+        <TableContainer component={Paper}>
+          <Table>
+            <TableBody>
+              {/* Volatility Metrics Skeleton */}
+              <TableRow>
+                <TableCell colSpan={2}>
+                  <Skeleton variant="text" width="60%" height={30} />
+                </TableCell>
+              </TableRow>
+              {[...Array(2)].map((_, i) => (
+                <TableRow key={`vol-${i}`}>
+                  <TableCell><Skeleton variant="text" width="80%" /></TableCell>
+                  <TableCell align="right"><Skeleton variant="text" width="40%" /></TableCell>
+                </TableRow>
+              ))}
+              
+              {/* Liquidity Metrics Skeleton */}
+              <TableRow>
+                <TableCell colSpan={2}>
+                  <Skeleton variant="text" width="60%" height={30} sx={{ mt: 2 }} />
+                </TableCell>
+              </TableRow>
+              {[...Array(4)].map((_, i) => (
+                <TableRow key={`liq-${i}`}>
+                  <TableCell><Skeleton variant="text" width="80%" /></TableCell>
+                  <TableCell align="right"><Skeleton variant="text" width="40%" /></TableCell>
+                </TableRow>
+              ))}
+              
+              {/* Performance Metrics Skeleton */}
+              <TableRow>
+                <TableCell colSpan={2}>
+                  <Skeleton variant="text" width="60%" height={30} sx={{ mt: 2 }} />
+                </TableCell>
+              </TableRow>
+              {[...Array(4)].map((_, i) => (
+                <TableRow key={`perf-${i}`}>
+                  <TableCell><Skeleton variant="text" width="80%" /></TableCell>
+                  <TableCell align="right"><Skeleton variant="text" width="40%" /></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      );
     }
 
     const { volatility, liquidity, performance } = marketData.metrics;
@@ -446,34 +531,149 @@ const Dashboard = () => {
   };
 
   const renderTechnicalIndicators = () => {
+    if (loading || !marketData || !marketData.historical) {
+      return <Typography>Loading technical indicators...</Typography>;
+    }
+    
+    // Calculate technical indicators using the enhanced service functions
+    const rsiData = marketDataService.calculateRSI(marketData.historical);
+    const macdData = marketDataService.calculateMACD(marketData.historical);
+    const bbData = marketDataService.calculateBollingerBands(marketData.historical);
+    
+    // Calculate simple moving averages
+    const calculateSMA = (data, period) => {
+      if (!data || data.length < period) return null;
+      const prices = data.map(d => d.close).slice(-period);
+      const sum = prices.reduce((total, price) => total + price, 0);
+      return sum / period;
+    };
+    
+    const sma50 = calculateSMA(marketData.historical, 50);
+    const sma200 = calculateSMA(marketData.historical, 200);
+    
+    // Define color indicators based on values
+    const getRSIColor = (value) => {
+      if (value >= 70) return 'error.main';  // Overbought
+      if (value <= 30) return 'success.main'; // Oversold
+      return 'text.primary'; // Neutral
+    };
+    
+    const getMACDColor = (histogram) => {
+      if (histogram > 0) return 'success.main'; // Positive momentum
+      if (histogram < 0) return 'error.main';   // Negative momentum
+      return 'text.primary'; // Neutral
+    };
+    
+    // Format number for display with comma separators and proper decimals
+    const formatIndicatorValue = (value) => {
+      if (value === null || value === undefined) return 'N/A';
+      return value.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    };
+    
     return (
       <List>
         <ListItem>
           <ListItemIcon><ShowChart /></ListItemIcon>
           <ListItemText 
             primary="Moving Averages" 
-            secondary="50-Day MA: 53,245.32, 200-Day MA: 48,721.65"
+            secondary={
+              <>
+                <Typography component="span" variant="body2">
+                  50-Day MA: {sma50 ? formatIndicatorValue(sma50) : 'N/A'}
+                </Typography>
+                <br />
+                <Typography component="span" variant="body2">
+                  200-Day MA: {sma200 ? formatIndicatorValue(sma200) : 'N/A'}
+                </Typography>
+                <Typography variant="caption" sx={{ display: 'block', mt: 0.5 }}>
+                  {sma50 && sma200 ? 
+                    sma50 > sma200 ? 
+                      'Golden Cross (Bullish)' : 'Death Cross (Bearish)' 
+                    : ''}
+                </Typography>
+              </>
+            }
           />
         </ListItem>
         <ListItem>
           <ListItemIcon><ShowChart /></ListItemIcon>
           <ListItemText 
             primary="RSI (14)" 
-            secondary="62.45 - Neutral"
+            secondary={
+              <>
+                <Typography 
+                  component="span" 
+                  variant="body2" 
+                  sx={{ color: getRSIColor(rsiData?.value) }}
+                >
+                  {rsiData ? formatIndicatorValue(rsiData.value) : 'N/A'} - {rsiData?.interpretation || 'N/A'}
+                </Typography>
+                {rsiData?.isEstimated && 
+                  <Typography variant="caption" sx={{ display: 'block' }}>
+                    (Estimated - insufficient data)
+                  </Typography>
+                }
+              </>
+            }
           />
         </ListItem>
         <ListItem>
           <ListItemIcon><ShowChart /></ListItemIcon>
           <ListItemText 
             primary="MACD" 
-            secondary="MACD: 245.32, Signal: 208.65, Histogram: 36.67"
+            secondary={
+              <>
+                <Typography component="span" variant="body2">
+                  MACD: {formatIndicatorValue(macdData.macd)}
+                </Typography>
+                <br />
+                <Typography component="span" variant="body2">
+                  Signal: {formatIndicatorValue(macdData.signal)}
+                </Typography>
+                <br />
+                <Typography 
+                  component="span" 
+                  variant="body2" 
+                  sx={{ color: getMACDColor(macdData.histogram) }}
+                >
+                  Histogram: {formatIndicatorValue(macdData.histogram)}
+                  {macdData.histogram > 0 ? ' (Bullish)' : macdData.histogram < 0 ? ' (Bearish)' : ' (Neutral)'}
+                </Typography>
+              </>
+            }
           />
         </ListItem>
         <ListItem>
           <ListItemIcon><ShowChart /></ListItemIcon>
           <ListItemText 
             primary="Bollinger Bands" 
-            secondary="Upper: 58,245.32, Middle: 53,721.65, Lower: 49,197.98"
+            secondary={
+              <>
+                <Typography component="span" variant="body2">
+                  Upper: {formatIndicatorValue(bbData.upper)}
+                </Typography>
+                <br />
+                <Typography component="span" variant="body2">
+                  Middle: {formatIndicatorValue(bbData.middle)}
+                </Typography>
+                <br />
+                <Typography component="span" variant="body2">
+                  Lower: {formatIndicatorValue(bbData.lower)}
+                </Typography>
+                <br />
+                <Typography component="span" variant="body2">
+                  Width: {formatIndicatorValue(bbData.width)}%
+                </Typography>
+                {bbData.isEstimated && 
+                  <Typography variant="caption" sx={{ display: 'block' }}>
+                    (Estimated - insufficient data)
+                  </Typography>
+                }
+              </>
+            }
           />
         </ListItem>
       </List>
@@ -496,7 +696,14 @@ const Dashboard = () => {
       }}
     >
       <DrawerHeader>
-        <Typography variant="h6">{getDashboardTitle()}</Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Typography variant="h6">{getDashboardTitle()}</Typography>
+          {marketData && (
+            <DataQualityChip quality={marketData.isMockData ? 'mock' : 'real'}>
+              {marketData.isMockData ? 'Mock Data' : 'Real Data'}
+            </DataQualityChip>
+          )}
+        </Box>
         <IconButton 
           edge="end" 
           color="inherit" 

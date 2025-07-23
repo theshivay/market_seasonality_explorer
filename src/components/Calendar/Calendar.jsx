@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Typography, Grid, Paper, styled, useMediaQuery, useTheme } from '@mui/material';
+import { Typography, Grid, Paper, Box, styled, useMediaQuery, useTheme } from '@mui/material';
 import moment from 'moment';
 import { AppContext } from '../../context/AppContext.jsx';
 import CalendarCell from './CalendarCell.jsx';
@@ -141,9 +141,18 @@ const Calendar = () => {
     setCalendarDays(days);
   }, [currentMonth, viewMode, selectedDate]);
 
-  // Handle date selection and range selection
+  // Handle date selection and range selection with improved UX
   const handleDateClick = (day) => {
-    if (isSelecting) {
+    // Handle click with modifier keys for special selection behaviors
+    if (window.event && window.event.shiftKey && selectionStart) {
+      // Shift+Click extends the current selection
+      const startDate = selectionStart.isBefore(day) ? selectionStart : day;
+      const endDate = selectionStart.isBefore(day) ? day : selectionStart;
+      
+      selectDateRange(startDate, endDate);
+      // Keep selection mode active for further refinement
+      setIsSelecting(true);
+    } else if (isSelecting) {
       // Finish selecting range
       const startDate = selectionStart.isBefore(day) ? selectionStart : day;
       const endDate = selectionStart.isBefore(day) ? day : selectionStart;
@@ -151,6 +160,10 @@ const Calendar = () => {
       selectDateRange(startDate, endDate);
       setIsSelecting(false);
       setSelectionStart(null);
+      
+      // Notify user of selection completion with range details
+      const days = endDate.diff(startDate, 'days') + 1;
+      console.log(`Selected range: ${startDate.format('MMM D')} - ${endDate.format('MMM D')} (${days} days)`);
     } else {
       // Start selecting range or select single day
       selectDate(day);
@@ -159,15 +172,23 @@ const Calendar = () => {
     }
   };
 
-  // Handle mouse enter for range preview
+  // Handle mouse enter for range preview with enhanced feedback
   const handleMouseEnter = (day) => {
     if (isSelecting && selectionStart) {
       // Preview range selection
       const startDate = selectionStart.isBefore(day) ? selectionStart : day;
       const endDate = selectionStart.isBefore(day) ? day : selectionStart;
       
-      // Just preview - don't commit yet
+      // Preview range selection for better UX
       selectDateRange(startDate, endDate);
+    }
+  };
+  
+  // Handle mouse leave to reset preview if user moves out of calendar
+  const handleMouseLeave = () => {
+    if (isSelecting && selectionStart) {
+      // Reset to just the start date selected when mouse leaves calendar
+      selectDateRange(selectionStart, selectionStart);
     }
   };
 
@@ -184,8 +205,14 @@ const Calendar = () => {
     }
   };
 
-  // Render daily view (detailed for a single day)
+  // Render daily view (improved with multi-day navigation and hourly breakdown)
   const renderDailyView = () => {
+    // Get the days of the current week for navigation context
+    const startOfWeek = moment(selectedDate).startOf('week');
+    const daysOfWeek = Array(7).fill(0).map((_, i) => 
+      startOfWeek.clone().add(i, 'days')
+    );
+    
     // Daily view shows hours of selected day
     // On mobile, only show business hours to save space
     const hourRange = isMobile ? 
@@ -197,31 +224,73 @@ const Calendar = () => {
     });
 
     return (
-      <Grid 
-        container 
-        spacing={isMobile ? 0.5 : 1} 
-        direction="column"
-        sx={{
-          maxHeight: isMobile ? 'calc(100vh - 180px)' : 'auto',
-          overflowY: isMobile ? 'auto' : 'visible'
-        }}
-      >
-        {hours.map((hour, index) => (
-          <Grid item xs={12} key={index}>
-            <CalendarCell 
-              date={hour}
-              isSelected={false}
-              isToday={moment().isSame(hour, 'hour')}
-              isCurrentMonth={true}
-              displayMode="hourly"
-              onKeyDown={(e) => handleKeyDown(e, hour)}
-              onClick={() => {}} // No click action for hourly view
-              instrument={selectedInstrument}
-              thresholds={thresholds}
-            />
-          </Grid>
-        ))}
-      </Grid>
+      <>
+        {/* Week day navigation bar */}
+        <Grid container spacing={0} sx={{ mb: 1 }}>
+          {daysOfWeek.map((day, index) => (
+            <Grid 
+              item 
+              xs={12/7} 
+              key={index} 
+              onClick={() => selectDate(day)}
+              sx={{
+                textAlign: 'center',
+                py: 1,
+                cursor: 'pointer',
+                bgcolor: selectedDate.isSame(day, 'day') ? 'primary.light' : 'transparent',
+                color: selectedDate.isSame(day, 'day') ? 'primary.contrastText' : 
+                       day.isSame(moment(), 'day') ? 'secondary.main' : 'text.primary',
+                fontWeight: day.isSame(moment(), 'day') ? 'bold' : 'normal',
+                '&:hover': {
+                  bgcolor: 'action.hover'
+                },
+                borderBottom: selectedDate.isSame(day, 'day') ? '2px solid' : 'none',
+                borderColor: 'primary.main'
+              }}
+            >
+              <Typography variant={isMobile ? 'caption' : 'body2'}>
+                {day.format('ddd')}
+              </Typography>
+              <Typography variant={isMobile ? 'body2' : 'body1'} sx={{ fontWeight: 'bold' }}>
+                {day.format('D')}
+              </Typography>
+            </Grid>
+          ))}
+        </Grid>
+        
+        {/* Current day's hourly breakdown */}
+        <Box sx={{ mt: 2, mb: 1 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+            {selectedDate.format('dddd, MMMM D, YYYY')}
+          </Typography>
+        </Box>
+        
+        <Grid 
+          container 
+          spacing={isMobile ? 0.5 : 1} 
+          sx={{
+            maxHeight: isMobile ? 'calc(100vh - 230px)' : 'auto',
+            overflowY: isMobile ? 'auto' : 'visible'
+          }}
+        >
+          {hours.map((hour, index) => (
+            <Grid item xs={12} key={index}>
+              <CalendarCell 
+                date={hour}
+                isSelected={false}
+                isToday={moment().isSame(hour, 'hour')}
+                isCurrentMonth={true}
+                displayMode="hourly"
+                onKeyDown={(e) => handleKeyDown(e, hour)}
+                onClick={() => handleDateClick(hour)} // Enable selection in hourly view
+                onMouseEnter={() => handleMouseEnter(hour)}
+                instrument={selectedInstrument}
+                thresholds={thresholds}
+              />
+            </Grid>
+          ))}
+        </Grid>
+      </>
     );
   };
 
@@ -365,6 +434,7 @@ const Calendar = () => {
         direction="column" 
         spacing={isMobile ? 0.5 : 1}
         {...swipeHandlers}
+        onMouseLeave={handleMouseLeave}
         className={`calendar-main scrollable-container ${isMobile ? 'mobile-calendar' : ''}`}
       >
         {renderCalendarForDevice()}
