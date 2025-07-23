@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Box, Typography, Paper, styled, Tooltip, alpha } from '@mui/material';
+import { Box, Typography, Paper, styled, Tooltip, alpha, useMediaQuery, useTheme } from '@mui/material';
 import { 
   ArrowUpward, 
   ArrowDownward,
@@ -44,12 +44,32 @@ const CellPaper = styled(Paper)(({
     transform: 'scale(1.02)',
     zIndex: 2,
     boxShadow: theme.shadows[4],
+  },
+  '&:active': {
+    transform: 'scale(0.98)', // Provide touch feedback
+  },
+  
+  // Responsive styles
+  [theme.breakpoints.down('md')]: {
+    minHeight: '70px',
+  },
+  [theme.breakpoints.down('sm')]: {
+    minHeight: '60px',
+    padding: theme.spacing(0.5),
+    fontSize: '0.9em',
   }
 }));
 
 const DateLabel = styled(Typography)(({ theme, istoday }) => ({
   fontWeight: istoday ? 'bold' : 'normal',
-  color: istoday ? theme.palette.secondary.main : theme.palette.text.primary
+  color: istoday ? theme.palette.secondary.main : theme.palette.text.primary,
+  
+  [theme.breakpoints.down('sm')]: {
+    fontSize: '0.9rem',
+  },
+  [theme.breakpoints.down('xs')]: {
+    fontSize: '0.8rem',
+  }
 }));
 
 const Indicator = styled(Box)(({ theme, type, level }) => ({
@@ -105,6 +125,8 @@ const CalendarCell = ({
 }) => {
   const { toggleDetailsPanel } = useContext(AppContext);
   const [cellData, setCellData] = useState(null);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   
   // Set up date range for market data fetch
   const startDate = moment(date).startOf('day');
@@ -125,7 +147,7 @@ const CalendarCell = ({
   }, [marketData]);
   
   // Determine volatility and performance levels
-  const volatilityLevel = cellData?.volatility 
+  const volatilityLevel = cellData?.volatility !== undefined
     ? getVolatilityLevel(cellData.volatility, thresholds.volatility) 
     : null;
   
@@ -169,9 +191,11 @@ const CalendarCell = ({
           </>
         )}
         <Typography variant="body2"><strong>Volume:</strong> {cellData.volume.toLocaleString()}</Typography>
-        {cellData.volatility && (
+        {cellData.volatility !== undefined && (
           <Typography variant="body2">
-            <strong>Volatility:</strong> {(cellData.volatility * 100).toFixed(2)}%
+            <strong>Volatility:</strong> {cellData.volatility <= 1 
+              ? (cellData.volatility * 100).toFixed(2) 
+              : cellData.volatility.toFixed(2)}%
           </Typography>
         )}
         {cellData.performance && (
@@ -183,7 +207,7 @@ const CalendarCell = ({
     );
   };
 
-  // Render cell content based on display mode
+  // Render cell content based on display mode and device size
   const renderContent = () => {
     switch (displayMode) {
       case 'hourly':
@@ -192,7 +216,7 @@ const CalendarCell = ({
             <DateLabel variant="body2" istoday={isToday ? 'true' : 'false'}>
               {formatDate(date, 'HH:mm')}
             </DateLabel>
-            {cellData && cellData.performance && (
+            {cellData && cellData.performance && !isMobile && (
               <Typography variant="body2" color={performanceLevel && performanceLevel !== 'neutral' ? `performance.${performanceLevel}` : 'textSecondary'}>
                 {cellData.performance > 0 ? '+' : ''}{cellData.performance.toFixed(2)}%
               </Typography>
@@ -205,9 +229,11 @@ const CalendarCell = ({
             <DateLabel variant="body2" istoday={isToday ? 'true' : 'false'}>
               {`Week ${date.week()}`}
             </DateLabel>
-            <Typography variant="caption">
-              {formatDate(date.startOf('week'), 'MMM D')} - {formatDate(date.endOf('week'), 'MMM D')}
-            </Typography>
+            {!isMobile && (
+              <Typography variant="caption">
+                {formatDate(date.startOf('week'), 'MMM D')} - {formatDate(date.endOf('week'), 'MMM D')}
+              </Typography>
+            )}
           </>
         );
       case 'daily':
@@ -217,10 +243,27 @@ const CalendarCell = ({
             <DateLabel variant="body2" istoday={isToday ? 'true' : 'false'}>
               {date.date()}
             </DateLabel>
-            {cellData && cellData.performance && (
-              <Typography variant="body2" color={performanceLevel && performanceLevel !== 'neutral' ? `performance.${performanceLevel}` : 'textSecondary'}>
-                {cellData.performance > 0 ? '+' : ''}{cellData.performance.toFixed(2)}%
+            {cellData && cellData.performance && !isMobile && (
+              <Typography 
+                variant={isMobile ? "caption" : "body2"} 
+                color={performanceLevel && performanceLevel !== 'neutral' ? `performance.${performanceLevel}` : 'textSecondary'}
+              >
+                {cellData.performance > 0 ? '+' : ''}{cellData.performance.toFixed(isMobile ? 1 : 2)}%
               </Typography>
+            )}
+            {/* For mobile only show performance icon, not text */}
+            {isMobile && cellData && performanceLevel && performanceLevel !== 'neutral' && (
+              <Box 
+                sx={{
+                  position: 'absolute',
+                  bottom: '2px',
+                  right: '2px',
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  bgcolor: theme.palette.performance[performanceLevel],
+                }}
+              />
             )}
           </>
         );

@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Typography, Grid, Paper, styled } from '@mui/material';
+import { Typography, Grid, Paper, styled, useMediaQuery, useTheme } from '@mui/material';
 import moment from 'moment';
 import { AppContext } from '../../context/AppContext.jsx';
 import CalendarCell from './CalendarCell.jsx';
 import CalendarHeader from './CalendarHeader.jsx';
 import CalendarControls from './CalendarControls.jsx';
 import dateUtils from '../../utils/dateUtils.jsx';
+import useSwipeGesture from '../../hooks/useSwipeGesture.jsx';
+import './CalendarStyles.css';
 
 const { getDatesInMonth, getWeeksInMonth, getDayNames } = dateUtils;
 
@@ -16,12 +18,28 @@ const CalendarContainer = styled(Paper)(({ theme }) => ({
   overflow: 'hidden',
   height: '100%',
   display: 'flex',
-  flexDirection: 'column'
+  flexDirection: 'column',
+  
+  [theme.breakpoints.down('sm')]: {
+    padding: theme.spacing(1),
+    borderRadius: 0,
+    boxShadow: 'none',
+  },
+  
+  '@media (max-width: 900px) and (orientation: landscape)': {
+    flexDirection: 'row',
+    overflow: 'hidden'
+  }
 }));
 
 const CalendarGrid = styled(Grid)(({ theme }) => ({
   flex: 1,
-  width: '100%'
+  width: '100%',
+  
+  [theme.breakpoints.down('sm')]: {
+    maxHeight: 'calc(100vh - 200px)', // Allow scrolling on mobile
+    overflowY: 'auto',
+  }
 }));
 
 const Calendar = () => {
@@ -35,10 +53,27 @@ const Calendar = () => {
     thresholds
   } = useContext(AppContext);
 
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [currentMonth, setCurrentMonth] = useState(moment(selectedDate));
   const [calendarDays, setCalendarDays] = useState([]);
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectionStart, setSelectionStart] = useState(null);
+
+  // Handle month navigation
+  const nextMonth = () => {
+    setCurrentMonth(currentMonth.clone().add(1, 'month'));
+  };
+
+  const prevMonth = () => {
+    setCurrentMonth(currentMonth.clone().subtract(1, 'month'));
+  };
+  
+  // Configure swipe gestures for mobile navigation
+  const swipeHandlers = useSwipeGesture(
+    nextMonth, // Swipe left goes to next month
+    prevMonth  // Swipe right goes to previous month
+  );
 
   // Handle keyboard navigation
   const handleKeyDown = (e, day) => {
@@ -106,15 +141,6 @@ const Calendar = () => {
     setCalendarDays(days);
   }, [currentMonth, viewMode, selectedDate]);
 
-  // Handle month navigation
-  const nextMonth = () => {
-    setCurrentMonth(currentMonth.clone().add(1, 'month'));
-  };
-
-  const prevMonth = () => {
-    setCurrentMonth(currentMonth.clone().subtract(1, 'month'));
-  };
-
   // Handle date selection and range selection
   const handleDateClick = (day) => {
     if (isSelecting) {
@@ -161,12 +187,25 @@ const Calendar = () => {
   // Render daily view (detailed for a single day)
   const renderDailyView = () => {
     // Daily view shows hours of selected day
-    const hours = Array(24).fill(0).map((_, i) => {
+    // On mobile, only show business hours to save space
+    const hourRange = isMobile ? 
+      [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20] : // Business hours for mobile
+      Array(24).fill(0).map((_, i) => i); // All 24 hours for desktop
+    
+    const hours = hourRange.map(i => {
       return moment(selectedDate).startOf('day').add(i, 'hours');
     });
 
     return (
-      <Grid container spacing={1} direction="column">
+      <Grid 
+        container 
+        spacing={isMobile ? 0.5 : 1} 
+        direction="column"
+        sx={{
+          maxHeight: isMobile ? 'calc(100vh - 180px)' : 'auto',
+          overflowY: isMobile ? 'auto' : 'visible'
+        }}
+      >
         {hours.map((hour, index) => (
           <Grid item xs={12} key={index}>
             <CalendarCell 
@@ -190,16 +229,29 @@ const Calendar = () => {
   const renderWeeklyView = () => {
     const dayNames = getDayNames();
     
+    // On mobile, use abbreviated day names with dates
+    const responsiveDayNames = isMobile 
+      ? dayNames.map(day => day.substring(0, 1)) 
+      : dayNames;
+    
     return (
       <>
         <Grid container spacing={0}>
-          {dayNames.map((day, index) => (
-            <Grid item xs key={index} sx={{ textAlign: 'center', py: 1 }}>
-              <Typography variant="subtitle2">{day}</Typography>
+          {responsiveDayNames.map((day, index) => (
+            <Grid item xs key={index} sx={{ 
+              textAlign: 'center', 
+              py: isMobile ? 0.5 : 1 
+            }}>
+              <Typography 
+                variant={isMobile ? "caption" : "subtitle2"}
+                sx={{ fontWeight: 'bold' }}
+              >
+                {day}
+              </Typography>
             </Grid>
           ))}
         </Grid>
-        <Grid container spacing={1}>
+        <Grid container spacing={isMobile ? 0.5 : 1}>
           {calendarDays.map((day, index) => (
             <Grid item xs={12 / 7} key={index}>
               <CalendarCell 
@@ -229,17 +281,30 @@ const Calendar = () => {
     const dayNames = getDayNames();
     const weeks = getWeeksInMonth(currentMonth.year(), currentMonth.month());
     
+    // On mobile, use abbreviated day names
+    const responsiveDayNames = isMobile 
+      ? dayNames.map(day => day.substring(0, 1)) 
+      : dayNames;
+    
     return (
       <>
         <Grid container spacing={0}>
-          {dayNames.map((day, index) => (
-            <Grid item xs key={index} sx={{ textAlign: 'center', py: 1 }}>
-              <Typography variant="subtitle2">{day}</Typography>
+          {responsiveDayNames.map((day, index) => (
+            <Grid item xs key={index} sx={{ 
+              textAlign: 'center', 
+              py: isMobile ? 0.5 : 1 
+            }}>
+              <Typography 
+                variant={isMobile ? "caption" : "subtitle2"}
+                sx={{ fontWeight: 'bold' }}
+              >
+                {day}
+              </Typography>
             </Grid>
           ))}
         </Grid>
         {weeks.map((week, weekIndex) => (
-          <Grid container spacing={1} key={weekIndex}>
+          <Grid container spacing={isMobile ? 0.5 : 1} key={weekIndex}>
             {week.map((day, dayIndex) => (
               <Grid item xs={12 / 7} key={dayIndex}>
                 <CalendarCell 
@@ -265,22 +330,44 @@ const Calendar = () => {
     );
   };
 
+  // Adjust calendar for mobile display
+  const renderCalendarForDevice = () => {
+    // Show less information on mobile
+    if (isMobile) {
+      return (
+        <div {...swipeHandlers}>
+          {renderCalendar()}
+        </div>
+      );
+    } else {
+      return renderCalendar();
+    }
+  };
+
   return (
-    <CalendarContainer>
-      {/* Calendar Header with month name and navigation */}
-      <CalendarHeader 
-        currentDate={currentMonth}
-        onPrevMonth={prevMonth}
-        onNextMonth={nextMonth}
-        viewMode={viewMode}
-      />
+    <CalendarContainer className="calendar-container">
+      <div className={isMobile ? "calendar-sidebar" : ""}>
+        {/* Calendar Header with month name and navigation */}
+        <CalendarHeader 
+          currentDate={currentMonth}
+          onPrevMonth={prevMonth}
+          onNextMonth={nextMonth}
+          viewMode={viewMode}
+        />
+        
+        {/* Calendar Controls for view switching, etc. */}
+        <CalendarControls />
+      </div>
       
-      {/* Calendar Controls for view switching, etc. */}
-      <CalendarControls />
-      
-      {/* Calendar Grid */}
-      <CalendarGrid container direction="column" spacing={1}>
-        {renderCalendar()}
+      {/* Calendar Grid with swipe gesture support on mobile */}
+      <CalendarGrid 
+        container 
+        direction="column" 
+        spacing={isMobile ? 0.5 : 1}
+        {...swipeHandlers}
+        className={`calendar-main scrollable-container ${isMobile ? 'mobile-calendar' : ''}`}
+      >
+        {renderCalendarForDevice()}
       </CalendarGrid>
     </CalendarContainer>
   );

@@ -9,7 +9,9 @@ import {
   MenuItem, 
   Button,
   styled,
-  Tooltip
+  Tooltip,
+  useMediaQuery,
+  useTheme
 } from '@mui/material';
 import {
   CalendarViewDay,
@@ -33,6 +35,11 @@ const ControlsContainer = styled(Box)(({ theme }) => ({
   [theme.breakpoints.down('md')]: {
     flexDirection: 'column',
     alignItems: 'stretch',
+  },
+  
+  [theme.breakpoints.down('sm')]: {
+    marginBottom: theme.spacing(1),
+    gap: theme.spacing(0.5),
   }
 }));
 
@@ -43,11 +50,28 @@ const ControlGroup = styled(Box)(({ theme }) => ({
   
   [theme.breakpoints.down('sm')]: {
     flexWrap: 'wrap',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    gap: theme.spacing(0.5),
+    marginBottom: theme.spacing(0.5),
+    
+    '& .MuiToggleButton-root': {
+      padding: '4px 8px', // Smaller padding on mobile for buttons
+      minWidth: '40px',
+    },
+    '& .MuiButton-root': {
+      padding: '4px 8px', // Smaller padding on mobile for buttons
+      minWidth: '40px',
+    },
+    '& .MuiFormControl-root': {
+      marginBottom: theme.spacing(0.5),
+    }
   }
 }));
 
 const CalendarControls = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  
   const { 
     viewMode, 
     toggleViewMode, 
@@ -59,11 +83,11 @@ const CalendarControls = () => {
 
   // Available financial instruments
   const instruments = [
-    { value: 'BTC-USD', label: 'Bitcoin (BTC/USD)' },
-    { value: 'ETH-USD', label: 'Ethereum (ETH/USD)' },
-    { value: 'XRP-USD', label: 'Ripple (XRP/USD)' },
-    { value: 'ADA-USD', label: 'Cardano (ADA/USD)' },
-    { value: 'SOL-USD', label: 'Solana (SOL/USD)' }
+    { value: 'BTCUSDT', label: 'Bitcoin (BTC/USDT)' },
+    { value: 'ETHUSDT', label: 'Ethereum (ETH/USDT)' },
+    { value: 'XRPUSDT', label: 'Ripple (XRP/USDT)' },
+    { value: 'ADAUSDT', label: 'Cardano (ADA/USDT)' },
+    { value: 'SOLUSDT', label: 'Solana (SOL/USDT)' }
   ];
 
   // Available themes
@@ -105,85 +129,103 @@ const CalendarControls = () => {
           exclusive
           onChange={handleViewModeChange}
           aria-label="view mode"
-          size="small"
+          size={isMobile ? "small" : "small"}
         >
           <ToggleButton value="daily" aria-label="daily view">
             <Tooltip title="Daily View">
-              <CalendarViewDay />
+              <CalendarViewDay fontSize={isMobile ? "small" : "medium"} />
             </Tooltip>
           </ToggleButton>
           <ToggleButton value="weekly" aria-label="weekly view">
             <Tooltip title="Weekly View">
-              <CalendarViewWeek />
+              <CalendarViewWeek fontSize={isMobile ? "small" : "medium"} />
             </Tooltip>
           </ToggleButton>
           <ToggleButton value="monthly" aria-label="monthly view">
             <Tooltip title="Monthly View">
-              <CalendarViewMonth />
+              <CalendarViewMonth fontSize={isMobile ? "small" : "medium"} />
             </Tooltip>
           </ToggleButton>
         </ToggleButtonGroup>
 
-        {/* Zoom Controls */}
-        <Tooltip title="Zoom In">
-          <Button variant="outlined" size="small">
-            <ZoomIn />
-          </Button>
-        </Tooltip>
-        <Tooltip title="Zoom Out">
-          <Button variant="outlined" size="small">
-            <ZoomOut />
-          </Button>
-        </Tooltip>
+        {/* Zoom Controls - Hide on mobile to save space */}
+        {!isMobile && (
+          <>
+            <Tooltip title="Zoom In">
+              <Button variant="outlined" size="small">
+                <ZoomIn />
+              </Button>
+            </Tooltip>
+            <Tooltip title="Zoom Out">
+              <Button variant="outlined" size="small">
+                <ZoomOut />
+              </Button>
+            </Tooltip>
+          </>
+        )}
       </ControlGroup>
 
       {/* Financial Instrument Selection */}
       <ControlGroup>
-        <FormControl size="small" sx={{ minWidth: 150 }}>
-          <InputLabel>Instrument</InputLabel>
+        <FormControl size="small" sx={{ minWidth: isMobile ? 110 : 150 }}>
+          <InputLabel>{isMobile ? '' : 'Instrument'}</InputLabel>
           <Select
             value={selectedInstrument}
-            label="Instrument"
+            label={isMobile ? '' : 'Instrument'}
             onChange={handleInstrumentChange}
+            sx={{ fontSize: isMobile ? '0.8rem' : '1rem' }}
           >
             {instruments.map((instrument) => (
-              <MenuItem key={instrument.value} value={instrument.value}>
-                {instrument.label}
+              <MenuItem 
+                key={instrument.value} 
+                value={instrument.value}
+                sx={{ fontSize: isMobile ? '0.8rem' : '1rem' }}
+              >
+                {isMobile ? instrument.value : instrument.label}
               </MenuItem>
             ))}
           </Select>
         </FormControl>
 
-        {/* Theme Selection */}
-        <FormControl size="small" sx={{ minWidth: 150 }}>
+        {/* Theme Selection - Simplified on mobile */}
+        <FormControl size="small" sx={{ minWidth: isMobile ? 100 : 150 }}>
           <InputLabel>
-            <ColorLens fontSize="small" sx={{ mr: 1 }} />
-            Theme
+            <ColorLens fontSize="small" sx={{ mr: isMobile ? 0 : 1 }} />
+            {isMobile ? '' : 'Theme'}
           </InputLabel>
           <Select
             value={themeMode}
-            label="Theme"
+            label={isMobile ? '' : 'Theme'}
             onChange={handleThemeChange}
-            startAdornment={<ColorLens fontSize="small" sx={{ mr: 1 }} />}
+            sx={{ fontSize: isMobile ? '0.8rem' : '1rem' }}
+            startAdornment={isMobile ? null : <ColorLens fontSize="small" sx={{ mr: 1 }} />}
           >
             {themes.map((theme) => (
-              <MenuItem key={theme.value} value={theme.value}>
-                {theme.label}
+              <MenuItem 
+                key={theme.value} 
+                value={theme.value}
+                sx={{ fontSize: isMobile ? '0.8rem' : '1rem' }}
+              >
+                {isMobile ? theme.value.slice(0, 3) : theme.label}
               </MenuItem>
             ))}
           </Select>
         </FormControl>
       </ControlGroup>
 
-      {/* Export Options */}
+      {/* Export Options - Icon only on mobile */}
       <ControlGroup>
         <Button
-          variant="contained"
-          startIcon={<FileDownload />}
+          variant={isMobile ? "outlined" : "contained"}
+          startIcon={isMobile ? null : <FileDownload />}
           onClick={() => handleExport('csv')}
           size="small"
+          sx={{ 
+            minWidth: isMobile ? '40px' : 'auto',
+            px: isMobile ? 1 : 2
+          }}
         >
-          Export
+          {isMobile ? <FileDownload fontSize="small" /> : 'Export'}
         </Button>
       </ControlGroup>
     </ControlsContainer>

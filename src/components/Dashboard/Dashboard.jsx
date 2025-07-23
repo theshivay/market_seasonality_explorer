@@ -365,11 +365,17 @@ const Dashboard = () => {
             </TableRow>
             <TableRow>
               <TableCell>Daily Volatility</TableCell>
-              <TableCell align="right">{volatility ? formatPercentage(volatility.daily * 100, 2) : '-'}</TableCell>
+              <TableCell align="right">
+                {volatility ? formatPercentage(volatility.daily * 100, 2) : '-'}
+                {volatility?.isEstimated && <span style={{fontSize: '0.8em', color: '#666'}}> (est.)</span>}
+              </TableCell>
             </TableRow>
             <TableRow>
               <TableCell>Annualized Volatility</TableCell>
-              <TableCell align="right">{volatility ? formatPercentage(volatility.annualized * 100, 2) : '-'}</TableCell>
+              <TableCell align="right">
+                {volatility ? formatPercentage(volatility.annualized * 100, 2) : '-'}
+                {volatility?.isEstimated && <span style={{fontSize: '0.8em', color: '#666'}}> (est.)</span>}
+              </TableCell>
             </TableRow>
 
             {/* Liquidity Metrics */}

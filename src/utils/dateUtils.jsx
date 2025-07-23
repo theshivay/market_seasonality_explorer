@@ -97,9 +97,13 @@ export const getMonthNames = (format = 'MMMM') => {
 
 // Function to calculate volatility level based on value
 export const getVolatilityLevel = (volatility, thresholds) => {
-  if (volatility < thresholds.low) {
+  // Convert volatility to percentage if it's in decimal form
+  const volatilityPercentage = volatility <= 1 ? volatility * 100 : volatility;
+  
+  // Apply thresholds (which are expressed in percentage)
+  if (volatilityPercentage < thresholds.low) {
     return 'low';
-  } else if (volatility >= thresholds.high) {
+  } else if (volatilityPercentage >= thresholds.high) {
     return 'high';
   } else {
     return 'medium';

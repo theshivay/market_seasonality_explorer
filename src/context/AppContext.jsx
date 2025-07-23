@@ -13,7 +13,7 @@ const AppContextProvider = ({ children }) => {
   const [selectedDateRange, setSelectedDateRange] = useState([null, null]);
   
   // State for financial instrument selection
-  const [selectedInstrument, setSelectedInstrument] = useState('BTC-USD');
+  const [selectedInstrument, setSelectedInstrument] = useState('BTCUSDT');
   
   // State for theme selection
   const [themeMode, setThemeMode] = useState('default');

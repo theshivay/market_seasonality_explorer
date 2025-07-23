@@ -222,11 +222,19 @@ const useMarketData = (symbol, timeframe, startDate, endDate) => {
   // Fetch data when parameters change
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
+    let isMounted = true;
+    const controller = new AbortController();
+    
     const fetchData = async () => {
       if (!symbol) return;
 
       setLoading(true);
       setError(null);
+      
+      // Add a slight delay to prevent too many concurrent API calls
+      // which could lead to rate limiting
+      const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+      await delay(Math.random() * 200); // Random delay up to 200ms
 
       try {
         // Convert dates to timestamps for API
@@ -241,9 +249,18 @@ const useMarketData = (symbol, timeframe, startDate, endDate) => {
           start,
           end
         );
+        
+        if (!isMounted) return;
 
         // Fetch latest orderbook data
         const orderbookData = await fetchOrderbook(symbol);
+        
+        if (!isMounted) return;
+
+        // Check if we have valid data
+        if (!historicalData || historicalData.length === 0) {
+          throw new Error('No historical data available for the selected period');
+        }
 
         // Calculate metrics
         const volatility = calculateVolatility(historicalData);
@@ -257,7 +274,12 @@ const useMarketData = (symbol, timeframe, startDate, endDate) => {
           startDate,
           endDate
         );
+        
+        if (!isMounted) return;
 
+        // Check if the data has the isMockData flag
+        const isMockData = historicalData[0]?.isMockData || orderbookData?.isMockData;
+        
         // Combine all data
         setData({
           symbol,
@@ -269,17 +291,28 @@ const useMarketData = (symbol, timeframe, startDate, endDate) => {
             volatility,
             liquidity,
             performance
-          }
+          },
+          isMockData // Flag indicating if we're using mock data
         });
       } catch (err) {
-        console.error('Error in useMarketData hook:', err);
-        setError(err.message || 'Failed to fetch market data');
+        if (isMounted) {
+          console.error('Error in useMarketData hook:', err);
+          setError(err.message || 'Failed to fetch market data');
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchData();
+    
+    // Cleanup function to handle component unmounting
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
   }, [symbol, timeframe, startDate, endDate, getInterval, processDataByTimeframe]);
 
   return { data, loading, error };

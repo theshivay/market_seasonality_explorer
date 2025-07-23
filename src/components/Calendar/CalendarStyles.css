@@ -1,0 +1,72 @@
+/* CalendarStyles.css */
+
+/* Add touch-friendly interactions for mobile */
+@media (max-width: 600px) {
+  /* Increase touch targets */
+  .MuiButtonBase-root,
+  .MuiIconButton-root {
+    min-width: 40px;
+    min-height: 40px;
+  }
+  
+  /* Better touch feedback */
+  .MuiButtonBase-root:active {
+    transform: scale(0.95);
+  }
+  
+  /* Remove hover effects that don't work well on touch devices */
+  .MuiPaper-root:hover {
+    transform: none !important;
+  }
+}
+
+/* Optimize for landscape orientation on mobile */
+@media (max-width: 900px) and (orientation: landscape) {
+  .calendar-container {
+    max-height: 85vh;
+    display: flex;
+    flex-direction: row;
+  }
+  
+  .calendar-sidebar {
+    width: 30%;
+  }
+  
+  .calendar-main {
+    width: 70%;
+  }
+}
+
+/* Animations for calendar navigation */
+.calendar-slide-enter {
+  opacity: 0;
+  transform: translateX(30px);
+}
+.calendar-slide-enter-active {
+  opacity: 1;
+  transform: translateX(0);
+  transition: opacity 300ms, transform 300ms;
+}
+.calendar-slide-exit {
+  opacity: 1;
+}
+.calendar-slide-exit-active {
+  opacity: 0;
+  transform: translateX(-30px);
+  transition: opacity 300ms, transform 300ms;
+}
+
+/* Improve accessibility - focus styles */
+:focus-visible {
+  outline: 2px solid #1976d2;
+  outline-offset: 2px;
+}
+
+/* Enhance scrolling on touch devices */
+@media (pointer: coarse) {
+  .scrollable-container {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+  }
+}

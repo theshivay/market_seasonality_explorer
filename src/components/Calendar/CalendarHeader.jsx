@@ -7,7 +7,19 @@ const HeaderContainer = styled(Box)(({ theme }) => ({
   justifyContent: 'space-between',
   alignItems: 'center',
   marginBottom: theme.spacing(2),
-  padding: theme.spacing(1, 0)
+  padding: theme.spacing(1, 0),
+  
+  [theme.breakpoints.down('sm')]: {
+    marginBottom: theme.spacing(1),
+  }
+}));
+
+const HeaderTitle = styled(Typography)(({ theme }) => ({
+  [theme.breakpoints.down('sm')]: {
+    fontSize: '1.2rem', // Smaller font on mobile
+    textAlign: 'center',
+    flex: 1
+  }
 }));
 
 const CalendarHeader = ({ currentDate, onPrevMonth, onNextMonth, viewMode }) => {
@@ -31,9 +43,9 @@ const CalendarHeader = ({ currentDate, onPrevMonth, onNextMonth, viewMode }) => 
       <IconButton onClick={onPrevMonth} aria-label="Previous month">
         <ChevronLeft />
       </IconButton>
-      <Typography variant="h5" component="h2">
+      <HeaderTitle variant="h5" component="h2">
         {formatHeaderTitle()}
-      </Typography>
+      </HeaderTitle>
       <IconButton onClick={onNextMonth} aria-label="Next month">
         <ChevronRight />
       </IconButton>
