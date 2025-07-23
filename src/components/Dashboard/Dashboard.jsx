@@ -109,13 +109,13 @@ const getTrendColor = (value, theme) => {
   return theme.palette.text.secondary;
 };
 
-const Dashboard = ({ open, onClose, selectedDate, instrument }) => {
+const Dashboard = ({ open, onClose, selectedDate, instrument, useRealData }) => {
   const theme = useTheme();
   const [activeTab, setActiveTab] = useState(TABS.OVERVIEW);
   const [historicalData, setHistoricalData] = useState([]);
   const [timeRange, setTimeRange] = useState('1W'); // Options: 1D, 1W, 1M, 3M
   const [expandedView, setExpandedView] = useState(false);
-  const { data, loading } = useMarketData(selectedDate, instrument);
+  const { data, loading } = useMarketData(selectedDate, instrument, useRealData);
   
   // Generate historical data for charts
   useEffect(() => {
@@ -150,7 +150,7 @@ const Dashboard = ({ open, onClose, selectedDate, instrument }) => {
         currentDate.add(1, 'day');
       }
       
-      const histData = dates.map(date => marketDataService.getHistoricalData(date, instrument))
+      const histData = dates.map(date => marketDataService.getHistoricalData(date, instrument, useRealData))
         .filter(data => data && data.isMarketOpen);
       
       setHistoricalData(histData);

@@ -6,12 +6,23 @@ export const AppContext = createContext();
 
 // Available financial instruments
 const INSTRUMENTS = [
+  // Crypto - CoinAPI/CoinGecko compatible
   { id: 'BTC-USD', name: 'Bitcoin (BTC/USD)' },
   { id: 'ETH-USD', name: 'Ethereum (ETH/USD)' },
   { id: 'SOL-USD', name: 'Solana (SOL/USD)' },
+  { id: 'ADA-USD', name: 'Cardano (ADA/USD)' },
+  { id: 'DOT-USD', name: 'Polkadot (DOT/USD)' },
+  { id: 'XRP-USD', name: 'Ripple (XRP/USD)' },
+  
+  // Stocks (Mock data for demo)
   { id: 'AAPL', name: 'Apple Inc. (AAPL)' },
   { id: 'MSFT', name: 'Microsoft (MSFT)' },
   { id: 'GOOGL', name: 'Google (GOOGL)' },
+  
+  // Binance trading pairs
+  { id: 'BTCUSDT', name: 'Bitcoin (Binance)' },
+  { id: 'ETHUSDT', name: 'Ethereum (Binance)' },
+  { id: 'SOLUSDT', name: 'Solana (Binance)' },
 ];
 
 // View modes
@@ -42,6 +53,9 @@ export const AppContextProvider = ({ children }) => {
 
   // Color theme
   const [colorTheme, setColorTheme] = useState('default'); // default, contrast, colorblind
+  
+  // Data source toggle
+  const [useRealData, setUseRealData] = useState(false);
 
   // Navigation functions
   const nextMonth = useCallback(() => {
@@ -146,7 +160,9 @@ export const AppContextProvider = ({ children }) => {
     prevDay,
     goToToday,
     colorTheme,
-    setColorTheme
+    setColorTheme,
+    useRealData,
+    setUseRealData
   };
 
   return (

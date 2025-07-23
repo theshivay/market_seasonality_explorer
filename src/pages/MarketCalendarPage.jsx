@@ -11,13 +11,17 @@ import {
   MenuItem,
   Select,
   FormControl,
-  InputLabel
+  InputLabel,
+  Switch,
+  FormControlLabel,
+  Tooltip
 } from '@mui/material';
-import { Settings, Menu as MenuIcon } from '@mui/icons-material';
+import { Settings, Menu as MenuIcon, Api, Storage } from '@mui/icons-material';
 import { AppContext } from '../context/AppContext';
 import Calendar from '../components/Calendar/Calendar';
 import Dashboard from '../components/Dashboard/Dashboard';
 import moment from 'moment';
+import marketDataService from '../services/marketDataService';
 
 const MarketCalendarPage = () => {
   const { 
@@ -27,6 +31,7 @@ const MarketCalendarPage = () => {
     viewMode,
     setViewMode,
     selectedDays,
+    INSTRUMENTS
   } = useContext(AppContext);
 
   // Dashboard state
@@ -39,15 +44,17 @@ const MarketCalendarPage = () => {
     setShowDashboard(true);
   };
 
-  // Import instruments from the context
-  const instruments = [
-    { id: 'BTC-USD', name: 'Bitcoin (BTC/USD)' },
-    { id: 'ETH-USD', name: 'Ethereum (ETH/USD)' },
-    { id: 'SOL-USD', name: 'Solana (SOL/USD)' },
-    { id: 'AAPL', name: 'Apple Inc. (AAPL)' },
-    { id: 'MSFT', name: 'Microsoft (MSFT)' },
-    { id: 'GOOGL', name: 'Google (GOOGL)' },
-  ];
+  // Data source toggle - now using context
+  const { useRealData, setUseRealData } = useContext(AppContext);
+  
+  // Toggle data source between real API data and mock data
+  const handleToggleDataSource = () => {
+    const newValue = !useRealData;
+    setUseRealData(newValue);
+    marketDataService.toggleDataSource(newValue);
+  };
+  
+  // Using instruments from AppContext
 
   return (
     <Box className="min-h-screen bg-gray-100 dark:bg-gray-900">
@@ -67,6 +74,26 @@ const MarketCalendarPage = () => {
             </Typography>
           </Box>
           <Box className="flex items-center">
+            <Tooltip title={useRealData ? "Using API Data" : "Using Mock Data"}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={useRealData}
+                    onChange={handleToggleDataSource}
+                    color="default"
+                    icon={<Storage />}
+                    checkedIcon={<Api />}
+                    size="small"
+                  />
+                }
+                label={
+                  <Typography variant="caption" sx={{ color: 'white' }}>
+                    {useRealData ? "API Data" : "Mock Data"}
+                  </Typography>
+                }
+                sx={{ mr: 2 }}
+              />
+            </Tooltip>
             <FormControl size="small" variant="outlined" className="min-w-[100px] mr-3">
               <InputLabel id="instrument-select-label" className="text-white">Instrument</InputLabel>
               <Select
@@ -76,7 +103,7 @@ const MarketCalendarPage = () => {
                 label="Instrument"
                 className="bg-primary-main text-white"
               >
-                {instruments.map(instrument => (
+                {INSTRUMENTS.map(instrument => (
                   <MenuItem key={instrument.id} value={instrument}>
                     {instrument.name}
                   </MenuItem>
@@ -141,6 +168,7 @@ const MarketCalendarPage = () => {
         onClose={() => setShowDashboard(false)}
         selectedDate={selectedDate}
         instrument={selectedInstrument}
+        useRealData={useRealData}
       />
     </Box>
   );

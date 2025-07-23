@@ -1,4 +1,5 @@
 import moment from 'moment';
+import { fetchCoinApiData, fetchBinanceData, fetchCoinGeckoData } from './apiService';
 
 // Helper function to get random value between min and max
 const getRandomValue = (min, max) => {
@@ -224,60 +225,273 @@ const aggregateToMonthly = (dailyData) => {
   return monthlyData;
 };
 
-// In a real application, these would be API calls
+// Real API calls with fallback to mock data
 const marketDataService = {
-  getHistoricalData: (date, instrument) => {
-    // For demo purposes, generate 90 days of data centered on the given date
-    const startDate = moment(date).subtract(45, 'days');
-    const endDate = moment(date).add(45, 'days');
-    return generateHistoricalData(startDate, endDate, instrument);
+  // Flag to toggle between real API data and mock data
+  useRealData: true,
+  
+  getHistoricalData: async (date, instrument) => {
+    if (!marketDataService.useRealData) {
+      // Fallback to mock data
+      const startDate = moment(date).subtract(45, 'days');
+      const endDate = moment(date).add(45, 'days');
+      return generateHistoricalData(startDate, endDate, instrument);
+    }
+    
+    try {
+      const startDate = moment(date).subtract(45, 'days').format('YYYY-MM-DD');
+      const endDate = moment(date).add(45, 'days').format('YYYY-MM-DD');
+      
+      // Determine the right API to use based on instrument type
+      const instrumentId = instrument?.id || instrument;
+      let apiData = null;
+      
+      if (instrumentId.includes('BTC') || instrumentId.includes('ETH') || instrumentId.includes('SOL')) {
+        // Try CoinAPI first
+        if (import.meta.env.VITE_COINAPI_KEY) {
+          apiData = await fetchCoinApiData(instrumentId, startDate, endDate);
+        }
+        
+        // If CoinAPI fails or no key, try CoinGecko
+        if (!apiData) {
+          const coinId = instrumentId.toLowerCase().replace('-usd', '').replace('/', '');
+          apiData = await fetchCoinGeckoData(coinId);
+        }
+      } else if (['AAPL', 'MSFT', 'GOOGL'].includes(instrumentId)) {
+        // For stocks we use mock data for this demo
+        apiData = generateHistoricalData(
+          moment(startDate), 
+          moment(endDate), 
+          instrument
+        );
+      } else if (instrumentId.includes('USDT')) {
+        // For Binance trading pairs
+        const binanceSymbol = instrumentId.replace('-', '');
+        const startTimestamp = moment(startDate).valueOf();
+        const endTimestamp = moment(endDate).valueOf();
+        apiData = await fetchBinanceData(binanceSymbol, startTimestamp, endTimestamp);
+      } else {
+        // Default to CoinGecko for all other crypto
+        try {
+          const coinId = instrumentId.toLowerCase().replace('-usd', '');
+          apiData = await fetchCoinGeckoData(coinId);
+        } catch {
+          // Fallback to mock data if everything fails
+          apiData = generateHistoricalData(
+            moment(startDate), 
+            moment(endDate), 
+            instrument
+          );
+        }
+      }
+      
+      return apiData || generateHistoricalData(moment(startDate), moment(endDate), instrument);
+    } catch (error) {
+      console.error('Error fetching historical data:', error);
+      // Fallback to mock data on error
+      const startDate = moment(date).subtract(45, 'days');
+      const endDate = moment(date).add(45, 'days');
+      return generateHistoricalData(startDate, endDate, instrument);
+    }
   },
   
-  getDailyData: (date, instrument) => {
-    // Generate a single day's data
-    const data = generateHistoricalData(date, date, instrument);
-    return data[moment(date).format('YYYY-MM-DD')];
+  getDailyData: async (date, instrument) => {
+    try {
+      if (!marketDataService.useRealData) {
+        // Fallback to mock data
+        const data = generateHistoricalData(date, date, instrument);
+        return data[moment(date).format('YYYY-MM-DD')];
+      }
+      
+      // Get full data and extract just the day we need
+      const startDate = moment(date).format('YYYY-MM-DD');
+      const endDate = moment(date).format('YYYY-MM-DD');
+      const dateKey = moment(date).format('YYYY-MM-DD');
+      
+      // Try to get the data from our API service
+      const instrumentId = instrument?.id || instrument;
+      let apiData = null;
+      
+      if (instrumentId.includes('BTC') || instrumentId.includes('ETH')) {
+        if (import.meta.env.VITE_COINAPI_KEY) {
+          apiData = await fetchCoinApiData(instrumentId, startDate, endDate);
+        } else {
+          const coinId = instrumentId.toLowerCase().replace('-usd', '').replace('/', '');
+          apiData = await fetchCoinGeckoData(coinId, 'usd', 1);
+        }
+      }
+      
+      return (apiData && apiData[dateKey]) || 
+        generateHistoricalData(date, date, instrument)[dateKey];
+    } catch (error) {
+      console.error('Error fetching daily data:', error);
+      const data = generateHistoricalData(date, date, instrument);
+      return data[moment(date).format('YYYY-MM-DD')];
+    }
   },
   
-  getWeeklyData: (date, instrument) => {
-    // Generate a week of data
-    const startDate = moment(date).startOf('week');
-    const endDate = moment(date).endOf('week');
-    const dailyData = generateHistoricalData(startDate, endDate, instrument);
-    return aggregateToWeekly(dailyData)[startDate.format('YYYY-MM-DD')];
+  getWeeklyData: async (date, instrument) => {
+    try {
+      if (!marketDataService.useRealData) {
+        // Fallback to mock data
+        const startDate = moment(date).startOf('week');
+        const endDate = moment(date).endOf('week');
+        const dailyData = generateHistoricalData(startDate, endDate, instrument);
+        return aggregateToWeekly(dailyData)[startDate.format('YYYY-MM-DD')];
+      }
+      
+      // Get daily data for the week and aggregate it
+      const startDate = moment(date).startOf('week').format('YYYY-MM-DD');
+      const endDate = moment(date).endOf('week').format('YYYY-MM-DD');
+      
+      // Try to get the data from our API service
+      const instrumentId = instrument?.id || instrument;
+      let apiData = null;
+      
+      if (instrumentId.includes('BTC') || instrumentId.includes('ETH')) {
+        if (import.meta.env.VITE_COINAPI_KEY) {
+          apiData = await fetchCoinApiData(instrumentId, startDate, endDate);
+        } else {
+          const coinId = instrumentId.toLowerCase().replace('-usd', '').replace('/', '');
+          apiData = await fetchCoinGeckoData(coinId, 'usd', 7);
+        }
+      }
+      
+      if (apiData) {
+        return aggregateToWeekly(apiData)[moment(startDate).format('YYYY-MM-DD')];
+      } else {
+        const mockStartDate = moment(date).startOf('week');
+        const mockEndDate = moment(date).endOf('week');
+        const dailyData = generateHistoricalData(mockStartDate, mockEndDate, instrument);
+        return aggregateToWeekly(dailyData)[mockStartDate.format('YYYY-MM-DD')];
+      }
+    } catch (error) {
+      console.error('Error fetching weekly data:', error);
+      const startDate = moment(date).startOf('week');
+      const endDate = moment(date).endOf('week');
+      const dailyData = generateHistoricalData(startDate, endDate, instrument);
+      return aggregateToWeekly(dailyData)[startDate.format('YYYY-MM-DD')];
+    }
   },
   
-  getMonthlyData: (date, instrument) => {
-    // Generate a month of data
-    const startDate = moment(date).startOf('month');
-    const endDate = moment(date).endOf('month');
-    const dailyData = generateHistoricalData(startDate, endDate, instrument);
-    return aggregateToMonthly(dailyData)[startDate.format('YYYY-MM-DD')];
+  getMonthlyData: async (date, instrument) => {
+    try {
+      if (!marketDataService.useRealData) {
+        // Fallback to mock data
+        const startDate = moment(date).startOf('month');
+        const endDate = moment(date).endOf('month');
+        const dailyData = generateHistoricalData(startDate, endDate, instrument);
+        return aggregateToMonthly(dailyData)[startDate.format('YYYY-MM-DD')];
+      }
+      
+      // Get daily data for the month and aggregate it
+      const startDate = moment(date).startOf('month').format('YYYY-MM-DD');
+      const endDate = moment(date).endOf('month').format('YYYY-MM-DD');
+      
+      // Try to get the data from our API service
+      const instrumentId = instrument?.id || instrument;
+      let apiData = null;
+      
+      if (instrumentId.includes('BTC') || instrumentId.includes('ETH')) {
+        if (import.meta.env.VITE_COINAPI_KEY) {
+          apiData = await fetchCoinApiData(instrumentId, startDate, endDate);
+        } else {
+          const coinId = instrumentId.toLowerCase().replace('-usd', '').replace('/', '');
+          apiData = await fetchCoinGeckoData(coinId, 'usd', 30);
+        }
+      }
+      
+      if (apiData) {
+        return aggregateToMonthly(apiData)[moment(startDate).format('YYYY-MM-DD')];
+      } else {
+        const mockStartDate = moment(date).startOf('month');
+        const mockEndDate = moment(date).endOf('month');
+        const dailyData = generateHistoricalData(mockStartDate, mockEndDate, instrument);
+        return aggregateToMonthly(dailyData)[mockStartDate.format('YYYY-MM-DD')];
+      }
+    } catch (error) {
+      console.error('Error fetching monthly data:', error);
+      const startDate = moment(date).startOf('month');
+      const endDate = moment(date).endOf('month');
+      const dailyData = generateHistoricalData(startDate, endDate, instrument);
+      return aggregateToMonthly(dailyData)[startDate.format('YYYY-MM-DD')];
+    }
   },
   
   // For dashboard display
-  getDetailedDayData: (date, instrument) => {
-    // Get detailed data for a specific day including intraday data
-    const dayData = marketDataService.getDailyData(date, instrument);
-    return {
-      ...dayData,
-      // Add more detailed analytics
-      volatilityBreakdown: {
-        morning: dayData.volatility * (0.8 + Math.random() * 0.4),
-        midday: dayData.volatility * (0.7 + Math.random() * 0.6),
-        afternoon: dayData.volatility * (0.9 + Math.random() * 0.2),
-      },
-      volumeByHour: dayData.intraday.map(h => ({ hour: h.hour, volume: h.volume })),
-    };
+  getDetailedDayData: async (date, instrument) => {
+    try {
+      // Get detailed data for a specific day including intraday data
+      const dayData = await marketDataService.getDailyData(date, instrument);
+      
+      if (!dayData) {
+        return null;
+      }
+      
+      // For real API data, we might not have intraday data, so create it if needed
+      const intraday = dayData.intraday || generateIntradayData(dayData.open, dayData.close, dayData.volatility);
+      
+      return {
+        ...dayData,
+        // Add more detailed analytics
+        volatilityBreakdown: {
+          morning: dayData.volatility * (0.8 + Math.random() * 0.4),
+          midday: dayData.volatility * (0.7 + Math.random() * 0.6),
+          afternoon: dayData.volatility * (0.9 + Math.random() * 0.2),
+        },
+        volumeByHour: intraday.map(h => ({ hour: h.hour, volume: h.volume })),
+        intraday: intraday
+      };
+    } catch (error) {
+      console.error('Error fetching detailed day data:', error);
+      return null;
+    }
   },
   
   // Get historical data from a start date to current date for charts
-  getHistoricalChartData: (startDate, instrument) => {
-    const endDate = moment();
-    const dailyData = generateHistoricalData(startDate, endDate, instrument);
-    
-    // Convert the object to an array for easier charting
-    return Object.values(dailyData);
+  getHistoricalChartData: async (startDate, instrument) => {
+    try {
+      if (!marketDataService.useRealData) {
+        const endDate = moment();
+        const dailyData = generateHistoricalData(startDate, endDate, instrument);
+        return Object.values(dailyData);
+      }
+      
+      const endDate = moment().format('YYYY-MM-DD');
+      const formattedStartDate = moment(startDate).format('YYYY-MM-DD');
+      
+      // Try to get the data from our API service
+      const instrumentId = instrument?.id || instrument;
+      let apiData = null;
+      
+      if (instrumentId.includes('BTC') || instrumentId.includes('ETH')) {
+        if (import.meta.env.VITE_COINAPI_KEY) {
+          apiData = await fetchCoinApiData(instrumentId, formattedStartDate, endDate);
+        } else {
+          const coinId = instrumentId.toLowerCase().replace('-usd', '').replace('/', '');
+          const days = moment().diff(moment(startDate), 'days');
+          apiData = await fetchCoinGeckoData(coinId, 'usd', days);
+        }
+      }
+      
+      if (apiData) {
+        return Object.values(apiData);
+      } else {
+        const mockEndDate = moment();
+        const dailyData = generateHistoricalData(startDate, mockEndDate, instrument);
+        return Object.values(dailyData);
+      }
+    } catch (error) {
+      console.error('Error fetching historical chart data:', error);
+      const endDate = moment();
+      const dailyData = generateHistoricalData(startDate, endDate, instrument);
+      return Object.values(dailyData);
+    }
+  },
+  
+  // Toggle between real API data and mock data
+  toggleDataSource: (useReal = true) => {
+    marketDataService.useRealData = useReal;
   }
 };
 

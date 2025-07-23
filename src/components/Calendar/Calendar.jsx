@@ -50,14 +50,15 @@ const Calendar = ({ onDaySelect }) => {
     viewMode,
     setViewMode,
     VIEW_MODES,
-    colorTheme
+    colorTheme,
+    useRealData
   } = useContext(AppContext);
   
   const [zoomLevel, setZoomLevel] = useState(1);
   const [calendarWidth, setCalendarWidth] = useState(null);
 
   // Fetch market data for the current view
-  const { data: marketData, loading } = useMarketData(currentDate, selectedInstrument);
+  const { data: marketData, loading } = useMarketData(currentDate, selectedInstrument, useRealData);
   
   // Handle zoom in/out
   const handleZoomIn = () => {
