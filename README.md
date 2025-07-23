@@ -1,8 +1,44 @@
-# Getting Started with Create React App
+# Market Seasonality Explorer
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A React application that displays an interactive calendar for visualizing historical volatility, liquidity, and performance data across different time periods (day/week/month) for financial instruments.
 
-## Available Scripts
+## Features
+
+### Interactive Calendar Component
+- Custom calendar component with daily, weekly, and monthly views
+- Smooth transitions between different time periods
+- Navigation between different months/years
+- Visual indicators for today's date
+- Keyboard navigation support
+
+### Data Visualization Layers
+- Volatility heatmap with color coding based on volatility levels
+- Liquidity indicators with visual patterns
+- Performance metrics with color-coded indicators
+
+### Multi-Timeframe Support
+- Daily View: Detailed metrics for each day
+- Weekly View: Aggregate daily data into weekly summaries
+- Monthly View: Monthly overview with key metrics
+
+### Interactive Features
+- Hover tooltips with detailed metrics
+- Click interactions to see detailed breakdowns
+- Date range selection for custom analysis
+- Filtering for different financial instruments
+- Zoom functionality
+
+### Data Dashboard Panel
+- Side panel with detailed information when a date/period is selected
+- Comprehensive metrics display
+- Interactive charts and graphs
+
+### Responsive Design
+- Works seamlessly across all device sizes
+- Touch-friendly interactions for mobile
+- Optimized layout for different screens
+
+## Getting Started
 
 In the project directory, you can run:
 
@@ -10,24 +46,6 @@ In the project directory, you can run:
 
 Runs the app in the development mode.\
 Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
-
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
-
-### `npm test`
-
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
-
-### `npm run build`
-
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
 
 ### `npm run eject`
 
