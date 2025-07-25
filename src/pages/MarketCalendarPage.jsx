@@ -55,25 +55,73 @@ const MarketCalendarPage = () => {
   };
   
   // Using instruments from AppContext
-
   return (
-    <Box className="min-h-screen bg-gray-100 dark:bg-gray-900">
-      <AppBar position="static" className="bg-primary-dark">
-        <Toolbar className="justify-between">
-          <Box className="flex items-center">
+    <Box 
+      className="min-h-screen"
+      sx={{
+        background: 'linear-gradient(145deg, rgba(240, 244, 248, 1) 0%, rgba(220, 230, 240, 1) 100%)',
+        backgroundAttachment: 'fixed'
+      }}
+    >
+      <AppBar 
+        position="static" 
+        className="bg-primary-dark shadow-lg"
+        sx={{ 
+          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+          backgroundImage: 'linear-gradient(to right, #1A365D, #2E5077)'
+        }}
+      >
+        <Toolbar 
+          sx={{ 
+            flexDirection: { xs: 'column', sm: 'row' },
+            justifyContent: 'space-between',
+            py: { xs: 1.5, sm: 1 },
+            gap: { xs: 2, sm: 0 }
+          }}
+        >
+          <Box 
+            sx={{ 
+              display: 'flex',
+              alignItems: 'center',
+              width: { xs: '100%', sm: 'auto' },
+              justifyContent: { xs: 'center', sm: 'flex-start' }
+            }}
+          >
             <IconButton
               edge="start"
               color="inherit"
               aria-label="menu"
-              className="mr-2"
+              className="hover:bg-primary-light hover:bg-opacity-20 transition-all"
+              sx={{ 
+                borderRadius: '8px',
+                mr: 1.5,
+                display: { xs: 'none', md: 'flex' }
+              }}
             >
               <MenuIcon />
             </IconButton>
-            <Typography variant="h6" className="font-bold">
+            <Typography 
+              variant="h6" 
+              className="font-bold tracking-wide"
+              sx={{ 
+                textShadow: '0px 1px 2px rgba(0,0,0,0.3)',
+                letterSpacing: '0.5px',
+                fontSize: { xs: '1.1rem', sm: '1.25rem' }
+              }}
+            >
               Market Seasonality Explorer
             </Typography>
           </Box>
-          <Box className="flex items-center">
+          <Box 
+            sx={{ 
+              display: 'flex', 
+              alignItems: 'center',
+              flexWrap: { xs: 'wrap', md: 'nowrap' },
+              gap: 1.5,
+              justifyContent: { xs: 'center', sm: 'flex-end' },
+              width: { xs: '100%', sm: 'auto' }
+            }}
+          >
             <Tooltip title={useRealData ? "Using API Data" : "Using Mock Data"}>
               <FormControlLabel
                 control={
@@ -84,24 +132,59 @@ const MarketCalendarPage = () => {
                     icon={<Storage />}
                     checkedIcon={<Api />}
                     size="small"
+                    sx={{
+                      '& .MuiSwitch-track': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.3)'
+                      }
+                    }}
                   />
                 }
                 label={
-                  <Typography variant="caption" sx={{ color: 'white' }}>
+                  <Typography 
+                    variant="caption" 
+                    sx={{ 
+                      color: 'white', 
+                      fontWeight: '500',
+                      display: { xs: 'none', sm: 'block' }
+                    }}
+                  >
                     {useRealData ? "API Data" : "Mock Data"}
                   </Typography>
                 }
-                sx={{ mr: 2 }}
+                sx={{ mr: { xs: 0, md: 2 } }}
               />
             </Tooltip>
-            <FormControl size="small" variant="outlined" className="min-w-[100px] mr-3">
-              <InputLabel id="instrument-select-label" className="text-white">Instrument</InputLabel>
+            <FormControl 
+              size="small" 
+              variant="outlined" 
+              sx={{ 
+                minWidth: { xs: '100px', sm: '120px' },
+                flexShrink: 1
+              }}
+            >
+              <InputLabel id="instrument-select-label" 
+                sx={{ color: 'rgba(255,255,255,0.85)' }}>
+                Instrument
+              </InputLabel>
               <Select
                 labelId="instrument-select-label"
                 value={selectedInstrument}
                 onChange={(e) => setSelectedInstrument(e.target.value)}
                 label="Instrument"
-                className="bg-primary-main text-white"
+                sx={{
+                  backgroundColor: 'rgba(46, 80, 119, 0.8)',
+                  color: 'white',
+                  borderRadius: '6px',
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'rgba(255, 255, 255, 0.3)',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'rgba(255, 255, 255, 0.5)',
+                  },
+                  '& .MuiSvgIcon-root': {
+                    color: 'white',
+                  }
+                }}
               >
                 {INSTRUMENTS.map(instrument => (
                   <MenuItem key={instrument.id} value={instrument}>
@@ -110,31 +193,87 @@ const MarketCalendarPage = () => {
                 ))}
               </Select>
             </FormControl>
-            <FormControl size="small" variant="outlined" className="min-w-[100px] mr-3">
-              <InputLabel id="view-mode-select-label" className="text-white">View</InputLabel>
+            <FormControl 
+              size="small" 
+              variant="outlined" 
+              sx={{ 
+                minWidth: { xs: '100px', sm: '120px' },
+                flexShrink: 1
+              }}
+            >
+              <InputLabel id="view-mode-select-label" 
+                sx={{ color: 'rgba(255,255,255,0.85)' }}>
+                View
+              </InputLabel>
               <Select
                 labelId="view-mode-select-label"
                 value={viewMode}
                 onChange={(e) => setViewMode(e.target.value)}
                 label="View"
-                className="bg-primary-main text-white"
+                sx={{
+                  backgroundColor: 'rgba(46, 80, 119, 0.8)',
+                  color: 'white',
+                  borderRadius: '6px',
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'rgba(255, 255, 255, 0.3)',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'rgba(255, 255, 255, 0.5)',
+                  },
+                  '& .MuiSvgIcon-root': {
+                    color: 'white',
+                  }
+                }}
               >
                 <MenuItem value="calendar">Calendar</MenuItem>
                 <MenuItem value="heatmap">Heat Map</MenuItem>
                 <MenuItem value="performance">Performance</MenuItem>
               </Select>
             </FormControl>
-            <IconButton color="inherit">
-              <Settings />
-            </IconButton>
+            <Tooltip title="Settings">
+              <IconButton 
+                color="inherit" 
+                className="hover:bg-primary-light hover:bg-opacity-20 transition-all"
+                sx={{ 
+                  borderRadius: '6px',
+                }}
+              >
+                <Settings />
+              </IconButton>
+            </Tooltip>
           </Box>
         </Toolbar>
       </AppBar>
       
-      <Container maxWidth="xl" className="py-6">
-        <Paper elevation={0} className="overflow-hidden rounded-xl shadow-md">
-          <Box className="p-6">
-            <Typography variant="h5" className="mb-6 font-semibold">
+      <Container 
+        maxWidth="xl" 
+        sx={{ 
+          py: { xs: 2, sm: 4, md: 6 },
+          px: { xs: 1.5, sm: 3, md: 3 }
+        }}
+      >
+        <Paper 
+          elevation={0} 
+          className="overflow-hidden rounded-xl shadow-md"
+          sx={{
+            backgroundColor: 'rgba(255, 255, 255, 0.98)',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+            transition: 'all 0.3s ease'
+          }}
+        >
+          <Box sx={{ p: { xs: 2, sm: 3, md: 6 } }}>
+            <Typography 
+              variant="h5" 
+              className="font-semibold"
+              sx={{
+                mb: { xs: 2, sm: 4, md: 6 },
+                borderBottom: '2px solid rgba(46, 80, 119, 0.2)',
+                paddingBottom: '0.75rem',
+                color: '#1A365D',
+                fontSize: { xs: '1.1rem', sm: '1.25rem', md: '1.5rem' },
+                textAlign: { xs: 'center', sm: 'left' }
+              }}
+            >
               {currentDate.format('MMMM YYYY')} - {selectedInstrument.name || selectedInstrument.id} Market Calendar
             </Typography>
             <Calendar onDaySelect={handleDaySelect} />
@@ -143,15 +282,66 @@ const MarketCalendarPage = () => {
         
         {/* Selected days summary */}
         {selectedDays.length > 0 && (
-          <Paper elevation={0} className="mt-6 p-4 rounded-xl shadow-md">
-            <Typography variant="subtitle1" className="mb-2 font-medium">
+          <Paper 
+            elevation={0}
+            sx={{
+              mt: { xs: 2, sm: 4, md: 6 },
+              p: { xs: 2, sm: 3, md: 4 },
+              borderRadius: { xs: '12px', sm: '16px' },
+              backgroundColor: 'rgba(255, 255, 255, 0.98)',
+              boxShadow: '0 4px 15px rgba(0,0,0,0.06)',
+              transition: 'all 0.3s ease'
+            }}
+          >
+            <Typography 
+              variant="subtitle1"
+              sx={{
+                mb: { xs: 1.5, sm: 2, md: 3 },
+                fontWeight: 500,
+                display: 'flex',
+                alignItems: 'center',
+                color: '#1A365D',
+                fontSize: { xs: '0.9rem', sm: '1rem', md: '1.1rem' },
+                '&::before': {
+                  content: '""',
+                  display: { xs: 'none', sm: 'inline-block' },
+                  width: '6px',
+                  height: '18px',
+                  backgroundColor: '#2E5077',
+                  marginRight: '10px',
+                  borderRadius: '3px',
+                },
+                justifyContent: { xs: 'center', sm: 'flex-start' }
+              }}
+            >
               Selected Days: {selectedDays.length}
             </Typography>
-            <Box className="flex flex-wrap gap-2">
+            <Box 
+              sx={{ 
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: { xs: 1, sm: 1.5, md: 2 },
+                justifyContent: { xs: 'center', sm: 'flex-start' }
+              }}
+            >
               {selectedDays.map(dateStr => (
                 <Box 
-                  key={dateStr} 
-                  className="px-2 py-1 bg-blue-100 text-blue-700 rounded-md text-sm"
+                  key={dateStr}
+                  sx={{
+                    px: { xs: 2, sm: 3 },
+                    py: { xs: 1, sm: 1.5 },
+                    bgcolor: 'rgba(224, 242, 254, 0.8)', // tailwind bg-blue-50 equivalent
+                    color: '#1A365D', // primary-dark
+                    borderRadius: '6px',
+                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                    border: '1px solid rgba(46, 80, 119, 0.2)',
+                    transition: 'all 0.2s ease',
+                    cursor: 'pointer',
+                    '&:hover': {
+                      backgroundColor: 'rgba(46, 80, 119, 0.1)',
+                      transform: 'translateY(-1px)'
+                    }
+                  }}
                   onClick={() => handleDaySelect(moment(dateStr))}
                 >
                   {moment(dateStr).format('MMM D')}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Grid, 
   Box, 
@@ -20,12 +20,9 @@ import {
   StackedLineChart,
   TimelineOutlined
 } from '@mui/icons-material';
-import moment from 'moment';
 import { 
   formatNumber, 
   formatPercentage, 
-  getVolatilityLevel, 
-  getPerformanceLevel,
   getVolatilityColor,
   getPerformanceIndicator,
   formatPrice
@@ -33,7 +30,6 @@ import {
 
 // Performance indicator component
 const PerformanceIndicator = ({ value, size = 'small', colorTheme = 'default' }) => {
-  const theme = useTheme();
   const { direction, color } = getPerformanceIndicator(value, colorTheme);
   
   return (
@@ -128,20 +124,57 @@ const CalendarCell = ({
   const dateKey = day?.format('YYYY-MM-DD');
   const dayData = marketData && dateKey ? (marketData[dateKey] || null) : null;
   
+  // State for responsive design
+  const [isXsScreen, setIsXsScreen] = useState(false);
+  const [isSmScreen, setIsSmScreen] = useState(false);
+  
+  // Handle responsive UI with useEffect
+  useEffect(() => {
+    const handleResize = () => {
+      setIsXsScreen(window.innerWidth < theme.breakpoints.values.sm);
+      setIsSmScreen(window.innerWidth < theme.breakpoints.values.md);
+    };
+    
+    // Initial check
+    handleResize();
+    
+    // Add event listener
+    window.addEventListener('resize', handleResize);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [theme.breakpoints.values.sm, theme.breakpoints.values.md]);
+  
   // Cell styling based on conditions
   const getCellStyle = () => {
+    // Using responsive state for styling
+    
+    let cellHeight;
+    if (viewMode === 'month') {
+      cellHeight = isXsScreen ? 80 : isSmScreen ? 100 : 120;
+    } else if (viewMode === 'week') {
+      cellHeight = isXsScreen ? 120 : isSmScreen ? 150 : 180;
+    } else {
+      cellHeight = 'auto';
+    }
+    
     let style = {
-      height: viewMode === 'month' ? 120 : viewMode === 'week' ? 180 : 'auto',
-      p: 1,
+      height: cellHeight,
+      p: isXsScreen ? 0.5 : 1,
       cursor: 'pointer',
       position: 'relative',
       overflow: 'hidden',
       transition: 'all 0.2s ease',
       borderRight: `1px solid ${theme.palette.divider}`,
       borderBottom: `1px solid ${theme.palette.divider}`,
+      width: '100%', // Ensure cells take full width of grid column
+      minWidth: viewMode === 'week' ? isXsScreen ? '8rem' : '12rem' : 'auto', // Responsive min width
+      fontSize: isXsScreen ? '0.75rem' : 'inherit', // Smaller font on mobile
       '&:hover': {
         backgroundColor: alpha(theme.palette.primary.light, 0.1),
-        transform: 'scale(1.01)',
+        transform: isXsScreen ? 'none' : 'scale(1.01)', // Disable transform on mobile for better performance
         zIndex: 1,
       }
     };
@@ -201,20 +234,24 @@ const CalendarCell = ({
   
   // Day number with indicator for today
   const renderDayNumber = () => {
+    // Using responsive state variable defined by the useEffect
+    
     return (
       <Box 
         sx={{ 
           display: 'flex', 
           justifyContent: 'space-between',
           alignItems: 'center',
-          mb: 1
+          mb: isXsScreen ? 0.5 : 1,
+          px: isXsScreen ? 0.5 : 0 // Add some padding on small screens
         }}
       >
         <Typography 
-          variant="body2" 
+          variant={isXsScreen ? "caption" : "body2"} 
           sx={{ 
             fontWeight: isToday ? 700 : isCurrentMonth ? 500 : 400,
-            color: isToday ? theme.palette.primary.main : 'inherit'
+            color: isToday ? theme.palette.primary.main : 'inherit',
+            fontSize: isXsScreen ? '0.7rem' : 'inherit'
           }}
         >
           {day.format('D')}
@@ -223,8 +260,8 @@ const CalendarCell = ({
         {isToday && (
           <Box 
             sx={{ 
-              width: 8, 
-              height: 8, 
+              width: isXsScreen ? 6 : 8, 
+              height: isXsScreen ? 6 : 8, 
               borderRadius: '50%', 
               backgroundColor: theme.palette.primary.main,
               ml: 0.5
@@ -247,7 +284,26 @@ const CalendarCell = ({
       );
     }
     
-    if (!dayData) return null;
+    if (!dayData) {
+      return (
+        <Box sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
+            No Data
+          </Typography>
+        </Box>
+      );
+    }
+    
+    // Market closed case
+    if (dayData && dayData.isMarketOpen === false) {
+      return (
+        <Box sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
+            Market Closed
+          </Typography>
+        </Box>
+      );
+    }
     
     return (
       <Fade in={!!dayData}>
@@ -255,50 +311,57 @@ const CalendarCell = ({
           {/* Price */}
           <Box sx={{ mb: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
-              {formatPrice(dayData.close, instrument)}
+              {typeof dayData.close === 'number' ? formatPrice(dayData.close, instrument) : '-'}
             </Typography>
-            <PerformanceIndicator value={dayData.performance} colorTheme={colorTheme} />
+            {typeof dayData.performance === 'number' && (
+              <PerformanceIndicator value={dayData.performance} colorTheme={colorTheme} />
+            )}
           </Box>
           
           {/* Volume */}
-          <VolumeIndicator volume={dayData.volume} colorTheme={colorTheme} />
+          {typeof dayData.volume === 'number' && dayData.volume > 0 && (
+            <VolumeIndicator volume={dayData.volume} colorTheme={colorTheme} />
+          )}
           
           {/* Volatility and Liquidity Indicators */}
           <Box sx={{ display: 'flex', gap: 0.5, mt: 1, flexWrap: 'wrap' }}>
             {/* Volatility */}
-            <Tooltip title={`Volatility: ${dayData.volatility.toFixed(2)}%`}>
-              <Box 
-                sx={{ 
-                  display: 'flex',
-                  alignItems: 'center',
-                  px: 0.75,
-                  py: 0.25,
-                  borderRadius: 1,
-                  bgcolor: alpha(getVolatilityColor(dayData.volatility, colorTheme), 0.2),
-                  border: `1px solid ${alpha(getVolatilityColor(dayData.volatility, colorTheme), 0.3)}`,
-                }}
-              >
-                <StackedLineChart 
+            {typeof dayData.volatility === 'number' && (
+              <Tooltip title={`Volatility: ${dayData.volatility.toFixed(2)}%`}>
+                <Box 
                   sx={{ 
-                    fontSize: '0.875rem', 
-                    color: getVolatilityColor(dayData.volatility, colorTheme)
-                  }} 
-                />
-                <Typography 
-                  variant="caption" 
-                  sx={{ 
-                    ml: 0.5,
-                    color: theme.palette.text.secondary,
-                    fontWeight: 500
+                    display: 'flex',
+                    alignItems: 'center',
+                    px: 0.75,
+                    py: 0.25,
+                    borderRadius: 1,
+                    bgcolor: alpha(getVolatilityColor(dayData.volatility, colorTheme), 0.2),
+                    border: `1px solid ${alpha(getVolatilityColor(dayData.volatility, colorTheme), 0.3)}`,
                   }}
                 >
-                  {dayData.volatility.toFixed(1)}%
-                </Typography>
+                  <StackedLineChart 
+                    sx={{ 
+                      fontSize: '0.875rem', 
+                      color: getVolatilityColor(dayData.volatility, colorTheme)
+                    }} 
+                  />
+                  <Typography 
+                    variant="caption" 
+                    sx={{ 
+                      ml: 0.5,
+                      color: theme.palette.text.secondary,
+                      fontWeight: 500
+                    }}
+                  >
+                    {dayData.volatility.toFixed(1)}%
+                  </Typography>
               </Box>
             </Tooltip>
+            )}
             
             {/* Liquidity */}
-            <Tooltip title={`Volume: ${formatNumber(dayData.volume)}`}>
+            {typeof dayData.volume === 'number' && dayData.volume > 0 && (
+              <Tooltip title={`Volume: ${formatNumber(dayData.volume)}`}>
               <Box 
                 sx={{ 
                   display: 'flex',
@@ -328,6 +391,7 @@ const CalendarCell = ({
                 </Typography>
               </Box>
             </Tooltip>
+            )}
           </Box>
         </Box>
       </Fade>

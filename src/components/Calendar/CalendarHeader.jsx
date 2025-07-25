@@ -5,7 +5,6 @@ import {
   Box,
   useTheme
 } from '@mui/material';
-import moment from 'moment';
 
 const CalendarHeader = ({ viewMode = 'month' }) => {
   const theme = useTheme();
@@ -14,7 +13,7 @@ const CalendarHeader = ({ viewMode = 'month' }) => {
   // Render day headers for month or week view
   const renderDayHeaders = () => {
     return days.map((day, index) => (
-      <Grid 
+      <Box 
         key={index}
         sx={{
           textAlign: 'center',
@@ -24,6 +23,10 @@ const CalendarHeader = ({ viewMode = 'month' }) => {
           bgcolor: theme.palette.mode === 'light' 
             ? theme.palette.grey[50] 
             : theme.palette.grey[900],
+          gridColumn: index + 1, // Explicitly set column position
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
         }}
       >
         <Typography 
@@ -37,16 +40,14 @@ const CalendarHeader = ({ viewMode = 'month' }) => {
         >
           {day}
         </Typography>
-      </Grid>
+      </Box>
     ));
   };
   
   // Render hour headers for day view
   const renderHourHeaders = () => {
     return (
-      <Grid 
-        item 
-        xs={12}
+      <Box 
         sx={{
           display: 'flex',
           justifyContent: 'space-between',
@@ -56,6 +57,8 @@ const CalendarHeader = ({ viewMode = 'month' }) => {
           bgcolor: theme.palette.mode === 'light' 
             ? theme.palette.grey[50] 
             : theme.palette.grey[900],
+          gridColumn: '1',
+          width: '100%'
         }}
       >
         <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
@@ -64,7 +67,7 @@ const CalendarHeader = ({ viewMode = 'month' }) => {
         <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
           Market Activity
         </Typography>
-      </Grid>
+      </Box>
     );
   };
   

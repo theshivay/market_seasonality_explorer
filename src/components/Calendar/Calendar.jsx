@@ -1,17 +1,15 @@
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext, useState } from 'react';
 import { 
-  Box, 
+  Box,
   Grid, 
-  IconButton, 
-  Typography,
-  ButtonGroup,
-  Button,
   Paper,
+  Typography,
+  IconButton,
+  Button,
   ToggleButtonGroup,
   ToggleButton,
-  Tooltip,
-  Zoom,
   useMediaQuery,
+  Tooltip,
   useTheme
 } from '@mui/material';
 import { 
@@ -35,7 +33,6 @@ import useMarketData from '../../hooks/useMarketData';
 const Calendar = ({ onDaySelect }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
   
   const { 
     currentDate, 
@@ -50,15 +47,13 @@ const Calendar = ({ onDaySelect }) => {
     viewMode,
     setViewMode,
     VIEW_MODES,
-    colorTheme,
-    useRealData
+    colorTheme
   } = useContext(AppContext);
   
   const [zoomLevel, setZoomLevel] = useState(1);
-  const [calendarWidth, setCalendarWidth] = useState(null);
 
   // Fetch market data for the current view
-  const { data: marketData, loading } = useMarketData(currentDate, selectedInstrument, useRealData);
+  const { data: marketData, loading } = useMarketData(currentDate, selectedInstrument);
   
   // Handle zoom in/out
   const handleZoomIn = () => {
@@ -98,7 +93,7 @@ const Calendar = ({ onDaySelect }) => {
     switch(viewMode) {
       case VIEW_MODES.MONTH:
         return currentDate.format('MMMM YYYY');
-      case VIEW_MODES.WEEK:
+      case VIEW_MODES.WEEK: {
         const weekStart = moment(currentDate).startOf('week');
         const weekEnd = moment(currentDate).endOf('week');
         if (weekStart.month() === weekEnd.month()) {
@@ -108,6 +103,7 @@ const Calendar = ({ onDaySelect }) => {
         } else {
           return `${weekStart.format('MMM D, YYYY')} - ${weekEnd.format('MMM D, YYYY')}`;
         }
+      }
       case VIEW_MODES.DAY:
         return currentDate.format('dddd, MMMM D, YYYY');
       default:
@@ -115,9 +111,8 @@ const Calendar = ({ onDaySelect }) => {
     }
   };
   
-  // Generate calendar days based on view mode
+    // Generate calendar days based on view mode
   const generateCalendarDays = () => {
-    const startDay = moment(currentDate).startOf('month').startOf('week');
     switch(viewMode) {
       case VIEW_MODES.DAY:
         return [currentDate.clone()];
@@ -133,24 +128,25 @@ const Calendar = ({ onDaySelect }) => {
 
   const days = generateCalendarDays();
 
-  // Calculate grid columns based on view mode
+  // Calculate grid columns based on view mode and screen size
   const getGridColumns = () => {
     switch(viewMode) {
       case VIEW_MODES.DAY:
         return 1;
       case VIEW_MODES.WEEK:
-        return 7;
+        return 7; // Always 7 days in a week
       case VIEW_MODES.MONTH:
       default:
-        return 7;
+        return 7; // 7 days in a week for month view as well
     }
   };
 
-  // Apply zoom effect to grid
+  // Apply zoom effect to grid with responsive adjustments
   const gridStyle = {
-    transform: `scale(${zoomLevel})`,
+    transform: isMobile ? 'scale(1)' : `scale(${zoomLevel})`,
     transformOrigin: 'top center',
     transition: 'transform 0.3s ease',
+    width: isMobile ? '100%' : undefined,
   };
 
   return (
@@ -159,15 +155,19 @@ const Calendar = ({ onDaySelect }) => {
       sx={{ 
         overflowX: 'auto',
         overflowY: 'auto',
-        maxHeight: viewMode === VIEW_MODES.MONTH ? '80vh' : '100%',
+        maxHeight: { 
+          xs: viewMode === VIEW_MODES.MONTH ? '70vh' : '100%',
+          md: viewMode === VIEW_MODES.MONTH ? '80vh' : '100%'
+        },
+        WebkitOverflowScrolling: 'touch', // For smooth scrolling on iOS
       }}
     >
       <Paper 
         elevation={2} 
         sx={{ 
-          p: 2, 
-          mb: 2, 
-          borderRadius: 2,
+          p: { xs: 1, sm: 1.5, md: 2 }, 
+          mb: { xs: 1, sm: 1.5, md: 2 }, 
+          borderRadius: { xs: 1, sm: 2 },
           background: theme.palette.background.paper,
           position: 'sticky',
           top: 0,
@@ -177,45 +177,96 @@ const Calendar = ({ onDaySelect }) => {
         <Box 
           sx={{ 
             display: 'flex', 
-            flexDirection: isTablet ? 'column' : 'row',
-            alignItems: isTablet ? 'flex-start' : 'center',
+            flexDirection: { xs: 'column', md: 'row' },
+            alignItems: { xs: 'center', md: 'center' },
             justifyContent: 'space-between',
-            gap: 2
+            gap: { xs: 1, sm: 1.5, md: 2 }
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Box 
+            sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              flexWrap: 'wrap', 
+              gap: 1,
+              justifyContent: { xs: 'center', md: 'flex-start' },
+              width: { xs: '100%', md: 'auto' }
+            }}
+          >
+            <Box 
+              sx={{ 
+                display: 'flex', 
+                alignItems: 'center',
+                justifyContent: { xs: 'center', md: 'flex-start' }
+              }}
+            >
               <Tooltip title="Previous">
-                <IconButton onClick={getPrevHandler()} color="primary" sx={{ color: theme.palette.text.secondary }}>
-                  <ChevronLeft />
+                <IconButton 
+                  onClick={getPrevHandler()} 
+                  color="primary" 
+                  sx={{ 
+                    color: theme.palette.text.secondary,
+                    padding: { xs: '4px', sm: '8px' }
+                  }}
+                >
+                  <ChevronLeft fontSize={isMobile ? "small" : "medium"} />
                 </IconButton>
               </Tooltip>
               
-              <Typography variant="h6" sx={{ mx: 1, fontWeight: 600, whiteSpace: 'nowrap' }}>
+              <Typography 
+                variant={isMobile ? "subtitle1" : "h6"} 
+                sx={{ 
+                  mx: { xs: 0.5, sm: 1 }, 
+                  fontWeight: 600, 
+                  whiteSpace: 'nowrap',
+                  fontSize: { xs: '0.9rem', sm: '1.1rem', md: '1.25rem' }
+                }}
+              >
                 {getDateTitle()}
               </Typography>
               
               <Tooltip title="Next">
-                <IconButton onClick={getNextHandler()} color="primary" sx={{ color: theme.palette.text.secondary }}>
-                  <ChevronRight />
+                <IconButton 
+                  onClick={getNextHandler()} 
+                  color="primary" 
+                  sx={{ 
+                    color: theme.palette.text.secondary,
+                    padding: { xs: '4px', sm: '8px' }
+                  }}
+                >
+                  <ChevronRight fontSize={isMobile ? "small" : "medium"} />
                 </IconButton>
               </Tooltip>
             </Box>
 
             <Tooltip title="Go to today">
               <Button 
-                startIcon={<Today />} 
+                startIcon={<Today fontSize={isMobile ? "small" : "medium"} />} 
                 onClick={goToToday}
                 variant="outlined"
                 size="small"
-                sx={{ ml: { xs: 0, md: 2 } }}
+                sx={{ 
+                  ml: { xs: 0, md: 2 },
+                  py: { xs: 0.5, sm: 0.75 },
+                  px: { xs: 1, sm: 1.5 },
+                  fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                }}
               >
                 Today
               </Button>
             </Tooltip>
           </Box>
           
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+          <Box 
+            sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: { xs: 1, md: 2 }, 
+              flexWrap: 'wrap',
+              justifyContent: { xs: 'center', md: 'flex-end' },
+              width: { xs: '100%', md: 'auto' }
+            }}
+          >
             <ToggleButtonGroup
               value={viewMode}
               exclusive
@@ -226,35 +277,48 @@ const Calendar = ({ onDaySelect }) => {
                 '& .MuiToggleButtonGroup-grouped': {
                   border: '1px solid',
                   borderColor: theme.palette.divider,
+                  padding: { xs: '4px 8px', sm: '6px 12px' }
                 }
               }}
             >
               <ToggleButton value={VIEW_MODES.MONTH} aria-label="month view">
                 <Tooltip title="Month View">
-                  <CalendarViewMonth />
+                  <CalendarViewMonth fontSize={isMobile ? "small" : "medium"} />
                 </Tooltip>
               </ToggleButton>
               <ToggleButton value={VIEW_MODES.WEEK} aria-label="week view">
                 <Tooltip title="Week View">
-                  <CalendarViewWeek />
+                  <CalendarViewWeek fontSize={isMobile ? "small" : "medium"} />
                 </Tooltip>
               </ToggleButton>
               <ToggleButton value={VIEW_MODES.DAY} aria-label="day view">
                 <Tooltip title="Day View">
-                  <CalendarViewDay />
+                  <CalendarViewDay fontSize={isMobile ? "small" : "medium"} />
                 </Tooltip>
               </ToggleButton>
             </ToggleButtonGroup>
             
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Box sx={{ 
+              display: { xs: 'none', sm: 'flex' }, 
+              alignItems: 'center', 
+              gap: 0.5 
+            }}>
               <Tooltip title="Zoom Out">
-                <IconButton onClick={handleZoomOut} disabled={zoomLevel <= 1}>
-                  <ZoomOut />
+                <IconButton 
+                  onClick={handleZoomOut} 
+                  disabled={zoomLevel <= 1} 
+                  size={isMobile ? "small" : "medium"}
+                >
+                  <ZoomOut fontSize={isMobile ? "small" : "medium"} />
                 </IconButton>
               </Tooltip>
               <Tooltip title="Zoom In">
-                <IconButton onClick={handleZoomIn} disabled={zoomLevel >= 1.8}>
-                  <ZoomIn />
+                <IconButton 
+                  onClick={handleZoomIn} 
+                  disabled={zoomLevel >= 1.8} 
+                  size={isMobile ? "small" : "medium"}
+                >
+                  <ZoomIn fontSize={isMobile ? "small" : "medium"} />
                 </IconButton>
               </Tooltip>
             </Box>
@@ -266,14 +330,32 @@ const Calendar = ({ onDaySelect }) => {
         elevation={2}
         sx={{
           overflow: 'hidden',
-          borderRadius: 2,
+          borderRadius: { xs: 1, sm: 2 },
           transition: 'all 0.3s ease',
+          boxShadow: { xs: '0 2px 8px rgba(0,0,0,0.08)', md: '0 4px 12px rgba(0,0,0,0.12)' }
         }}
       >
-        <Box sx={{ overflowX: 'auto', overflowY: 'auto' }}>
+        <Box sx={{ 
+          overflowX: 'auto', 
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch', // For smooth scrolling on iOS
+          minHeight: { xs: '50vh', sm: '60vh' }
+        }}>
           <Box style={gridStyle}>
-            <Grid container spacing={0} gridColumns={getGridColumns()}>
+            <Grid 
+              container 
+              spacing={0} 
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: `repeat(${getGridColumns()}, 1fr)`,
+                width: '100%',
+                minWidth: { xs: '600px', md: '900px' }, // Ensure minimum width for scrolling on mobile
+              }}
+            >
+              {/* Header row with weekday names */}
               <CalendarHeader viewMode={viewMode} />
+              
+              {/* Calendar cells */}
               {days.map((day, index) => (
                 <CalendarCell 
                   key={index} 

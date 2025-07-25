@@ -1,10 +1,7 @@
 import moment from 'moment';
-import { fetchCoinApiData, fetchBinanceData, fetchCoinGeckoData } from './apiService';
+import { fetchCoinGeckoData, fetchOKXData } from './apiService';
 
-// Helper function to get random value between min and max
-const getRandomValue = (min, max) => {
-  return Math.random() * (max - min) + min;
-};
+// Helper function definitions moved to where they're used directly
 
 // Helper function to generate mock volatility (standard deviation)
 const generateVolatility = (baseValue, day) => {
@@ -108,7 +105,6 @@ const generateIntradayData = (open, close, volatility) => {
   const data = [];
   const hoursInDay = 8; // Trading hours
   
-  let currentPrice = open;
   const totalChange = close - open;
   const stepChange = totalChange / hoursInDay;
   
@@ -122,8 +118,6 @@ const generateIntradayData = (open, close, volatility) => {
       price,
       volume: 1000 + Math.random() * 5000
     });
-    
-    currentPrice = price;
   }
   
   return data;
@@ -230,65 +224,149 @@ const marketDataService = {
   // Flag to toggle between real API data and mock data
   useRealData: true,
   
+  // Toggle between real API data and mock data
+  toggleDataSource: function(useReal) {
+    console.log(`Toggling data source to ${useReal ? 'real API' : 'mock'} data`);
+    this.useRealData = useReal;
+    return this.useRealData;
+  },
+  
   getHistoricalData: async (date, instrument) => {
     if (!marketDataService.useRealData) {
       // Fallback to mock data
+      console.log('Using MOCK data for:', instrument?.id || instrument);
       const startDate = moment(date).subtract(45, 'days');
       const endDate = moment(date).add(45, 'days');
       return generateHistoricalData(startDate, endDate, instrument);
     }
     
     try {
-      const startDate = moment(date).subtract(45, 'days').format('YYYY-MM-DD');
-      const endDate = moment(date).add(45, 'days').format('YYYY-MM-DD');
+      console.log('Attempting to fetch REAL API data for:', instrument?.id || instrument);
+      const startDateObj = moment(date).subtract(45, 'days');
+      const endDateObj = moment(date).add(45, 'days');
+      
+      const startDate = startDateObj.format('YYYY-MM-DD');
+      const endDate = endDateObj.format('YYYY-MM-DD');
+      
+      // Log time range for debugging
+      console.log(`Fetching data from ${startDate} to ${endDate}`);
       
       // Determine the right API to use based on instrument type
       const instrumentId = instrument?.id || instrument;
       let apiData = null;
       
-      if (instrumentId.includes('BTC') || instrumentId.includes('ETH') || instrumentId.includes('SOL')) {
-        // Try CoinAPI first
-        if (import.meta.env.VITE_COINAPI_KEY) {
-          apiData = await fetchCoinApiData(instrumentId, startDate, endDate);
-        }
+      // Try OKX first, then fall back to CoinGecko as our primary API source for crypto assets
+      if (instrumentId.includes('BTC') || instrumentId.includes('ETH') || instrumentId.includes('SOL') || 
+          instrumentId.includes('ADA') || instrumentId.includes('DOT') || instrumentId.includes('XRP') ||
+          instrumentId.includes('USDT')) {
         
-        // If CoinAPI fails or no key, try CoinGecko
-        if (!apiData) {
-          const coinId = instrumentId.toLowerCase().replace('-usd', '').replace('/', '');
-          apiData = await fetchCoinGeckoData(coinId);
-        }
-      } else if (['AAPL', 'MSFT', 'GOOGL'].includes(instrumentId)) {
-        // For stocks we use mock data for this demo
-        apiData = generateHistoricalData(
-          moment(startDate), 
-          moment(endDate), 
-          instrument
-        );
-      } else if (instrumentId.includes('USDT')) {
-        // For Binance trading pairs
-        const binanceSymbol = instrumentId.replace('-', '');
-        const startTimestamp = moment(startDate).valueOf();
-        const endTimestamp = moment(endDate).valueOf();
-        apiData = await fetchBinanceData(binanceSymbol, startTimestamp, endTimestamp);
-      } else {
-        // Default to CoinGecko for all other crypto
+        console.log('Trying OKX API first for:', instrumentId);
         try {
-          const coinId = instrumentId.toLowerCase().replace('-usd', '');
-          apiData = await fetchCoinGeckoData(coinId);
-        } catch {
-          // Fallback to mock data if everything fails
+          // Calculate days between start and end date
+          const days = endDateObj.diff(startDateObj, 'days') + 1;
+          const limit = Math.min(days, 90); // OKX API limit is 100 candles, but we'll use 90 to be safe
+          
+          // Use the ISO timestamp for OKX API
+          const startIso = startDateObj.toISOString();
+          const endIso = endDateObj.toISOString();
+          
+          console.log(`Fetching ${limit} days of OKX data from ${startIso} to ${endIso}`);
+          
+          // Try OKX API first with date parameters
+          apiData = await fetchOKXData(instrumentId, '1D', limit, startIso, endIso);
+          console.log('OKX data received:', apiData ? `Success (${Object.keys(apiData).length} days)` : 'Empty response');
+          
+          // If OKX fails or returns limited data, try CoinGecko as a fallback
+          if (!apiData || Object.keys(apiData).length < (days / 2)) {
+            console.log('Falling back to CoinGecko API for:', instrumentId);
+            // Extract the coin id from the instrument identifier
+            let coinId;
+            if (instrumentId.includes('USDT')) {
+              // For Binance style pairs like BTCUSDT
+              coinId = instrumentId.toLowerCase().replace('usdt', '');
+            } else {
+              // For regular pairs like BTC-USD
+              coinId = instrumentId.toLowerCase().replace('-usd', '').replace('/', '');
+            }
+            
+            // CoinGecko has a free tier that works well
+            apiData = await fetchCoinGeckoData(coinId, 'usd', days);
+            console.log('CoinGecko data received:', apiData ? `Success (${Object.keys(apiData).length} days)` : 'Empty response');
+          }
+        } catch (err) {
+          console.error('CoinGecko API error:', err.message);
+          console.log('Falling back to mock data after CoinGecko error');
+          // Fallback to mock data if API fails
           apiData = generateHistoricalData(
             moment(startDate), 
             moment(endDate), 
             instrument
           );
         }
+      } else if (['AAPL', 'MSFT', 'GOOGL'].includes(instrumentId)) {
+        // For stocks we use mock data for this demo
+        console.log('Using mock data for stock:', instrumentId);
+        apiData = generateHistoricalData(
+          moment(startDate), 
+          moment(endDate), 
+          instrument
+        );
+      } else {
+        // Use mock data for any other instrument types
+        console.log('Using mock data for other instrument:', instrumentId);
+        apiData = generateHistoricalData(
+          moment(startDate), 
+          moment(endDate), 
+          instrument
+        );
       }
       
-      return apiData || generateHistoricalData(moment(startDate), moment(endDate), instrument);
+      if (apiData) {
+        console.log('Successfully retrieved API data');
+        
+        // Add isMarketOpen field to each day
+        Object.keys(apiData).forEach(dateKey => {
+          // Only add the field if it doesn't exist
+          if (!Object.prototype.hasOwnProperty.call(apiData[dateKey], 'isMarketOpen')) {
+            apiData[dateKey].isMarketOpen = true;
+          }
+          
+          // Make sure all required fields are present
+          if (!Object.prototype.hasOwnProperty.call(apiData[dateKey], 'performance')) {
+            apiData[dateKey].performance = apiData[dateKey].close && apiData[dateKey].open 
+              ? ((apiData[dateKey].close - apiData[dateKey].open) / apiData[dateKey].open) * 100
+              : 0;
+          }
+          
+          if (!Object.prototype.hasOwnProperty.call(apiData[dateKey], 'volatility')) {
+            apiData[dateKey].volatility = 1.0; // Default volatility
+          }
+          
+          if (!Object.prototype.hasOwnProperty.call(apiData[dateKey], 'liquidity')) {
+            apiData[dateKey].liquidity = apiData[dateKey].volume 
+              ? apiData[dateKey].volume / 10000000
+              : 0.5;
+          }
+          
+          // Add any missing technical indicators
+          if (!Object.prototype.hasOwnProperty.call(apiData[dateKey], 'technicalIndicators')) {
+            apiData[dateKey].technicalIndicators = {
+              sma5: apiData[dateKey].close,
+              sma20: apiData[dateKey].close,
+              rsi: 50
+            };
+          }
+        });
+        
+        return apiData;
+      } else {
+        console.log('No API data retrieved, falling back to mock data');
+        return generateHistoricalData(moment(startDate), moment(endDate), instrument);
+      }
     } catch (error) {
       console.error('Error fetching historical data:', error);
       // Fallback to mock data on error
+      console.log('API error occurred, falling back to mock data');
       const startDate = moment(date).subtract(45, 'days');
       const endDate = moment(date).add(45, 'days');
       return generateHistoricalData(startDate, endDate, instrument);
@@ -304,8 +382,6 @@ const marketDataService = {
       }
       
       // Get full data and extract just the day we need
-      const startDate = moment(date).format('YYYY-MM-DD');
-      const endDate = moment(date).format('YYYY-MM-DD');
       const dateKey = moment(date).format('YYYY-MM-DD');
       
       // Try to get the data from our API service
@@ -313,12 +389,8 @@ const marketDataService = {
       let apiData = null;
       
       if (instrumentId.includes('BTC') || instrumentId.includes('ETH')) {
-        if (import.meta.env.VITE_COINAPI_KEY) {
-          apiData = await fetchCoinApiData(instrumentId, startDate, endDate);
-        } else {
-          const coinId = instrumentId.toLowerCase().replace('-usd', '').replace('/', '');
-          apiData = await fetchCoinGeckoData(coinId, 'usd', 1);
-        }
+        const coinId = instrumentId.toLowerCase().replace('-usd', '').replace('/', '');
+        apiData = await fetchCoinGeckoData(coinId, 'usd', 1);
       }
       
       return (apiData && apiData[dateKey]) || 
@@ -342,19 +414,14 @@ const marketDataService = {
       
       // Get daily data for the week and aggregate it
       const startDate = moment(date).startOf('week').format('YYYY-MM-DD');
-      const endDate = moment(date).endOf('week').format('YYYY-MM-DD');
       
       // Try to get the data from our API service
       const instrumentId = instrument?.id || instrument;
       let apiData = null;
       
       if (instrumentId.includes('BTC') || instrumentId.includes('ETH')) {
-        if (import.meta.env.VITE_COINAPI_KEY) {
-          apiData = await fetchCoinApiData(instrumentId, startDate, endDate);
-        } else {
-          const coinId = instrumentId.toLowerCase().replace('-usd', '').replace('/', '');
-          apiData = await fetchCoinGeckoData(coinId, 'usd', 7);
-        }
+        const coinId = instrumentId.toLowerCase().replace('-usd', '').replace('/', '');
+        apiData = await fetchCoinGeckoData(coinId, 'usd', 7);
       }
       
       if (apiData) {
@@ -386,19 +453,14 @@ const marketDataService = {
       
       // Get daily data for the month and aggregate it
       const startDate = moment(date).startOf('month').format('YYYY-MM-DD');
-      const endDate = moment(date).endOf('month').format('YYYY-MM-DD');
       
       // Try to get the data from our API service
       const instrumentId = instrument?.id || instrument;
       let apiData = null;
       
       if (instrumentId.includes('BTC') || instrumentId.includes('ETH')) {
-        if (import.meta.env.VITE_COINAPI_KEY) {
-          apiData = await fetchCoinApiData(instrumentId, startDate, endDate);
-        } else {
-          const coinId = instrumentId.toLowerCase().replace('-usd', '').replace('/', '');
-          apiData = await fetchCoinGeckoData(coinId, 'usd', 30);
-        }
+        const coinId = instrumentId.toLowerCase().replace('-usd', '').replace('/', '');
+        apiData = await fetchCoinGeckoData(coinId, 'usd', 30);
       }
       
       if (apiData) {
@@ -457,21 +519,16 @@ const marketDataService = {
         return Object.values(dailyData);
       }
       
-      const endDate = moment().format('YYYY-MM-DD');
-      const formattedStartDate = moment(startDate).format('YYYY-MM-DD');
+      // Calculate days from startDate to now
       
       // Try to get the data from our API service
       const instrumentId = instrument?.id || instrument;
       let apiData = null;
       
       if (instrumentId.includes('BTC') || instrumentId.includes('ETH')) {
-        if (import.meta.env.VITE_COINAPI_KEY) {
-          apiData = await fetchCoinApiData(instrumentId, formattedStartDate, endDate);
-        } else {
-          const coinId = instrumentId.toLowerCase().replace('-usd', '').replace('/', '');
-          const days = moment().diff(moment(startDate), 'days');
-          apiData = await fetchCoinGeckoData(coinId, 'usd', days);
-        }
+        const coinId = instrumentId.toLowerCase().replace('-usd', '').replace('/', '');
+        const days = moment().diff(moment(startDate), 'days');
+        apiData = await fetchCoinGeckoData(coinId, 'usd', days);
       }
       
       if (apiData) {
@@ -489,10 +546,8 @@ const marketDataService = {
     }
   },
   
-  // Toggle between real API data and mock data
-  toggleDataSource: (useReal = true) => {
-    marketDataService.useRealData = useReal;
-  }
+  // This is intentionally removed to fix the duplicate key error.
+  // The toggleDataSource method is already defined at the top of the marketDataService object
 };
 
 export default marketDataService;

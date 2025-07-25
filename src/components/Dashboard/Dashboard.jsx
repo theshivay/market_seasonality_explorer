@@ -64,7 +64,7 @@ import {
 } from 'recharts';
 import useMarketData from '../../hooks/useMarketData';
 import marketDataService from '../../services/marketDataService';
-import { formatDate, formatNumber, formatPercentage, formatPrice } from '../../utils/dateUtils';
+import { formatNumber, formatPercentage, formatPrice } from '../../utils/dateUtils';
 import moment from 'moment';
 
 // Dashboard tabs
@@ -115,11 +115,32 @@ const Dashboard = ({ open, onClose, selectedDate, instrument, useRealData }) => 
   const [historicalData, setHistoricalData] = useState([]);
   const [timeRange, setTimeRange] = useState('1W'); // Options: 1D, 1W, 1M, 3M
   const [expandedView, setExpandedView] = useState(false);
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
   const { data, loading } = useMarketData(selectedDate, instrument, useRealData);
+  
+  // Handle responsive UI with useEffect and resize event listener instead of direct window.innerWidth
+  useEffect(() => {
+    const handleResize = () => {
+      setIsSmallScreen(window.innerWidth < theme.breakpoints.values.sm);
+    };
+    
+    // Initial check
+    handleResize();
+    
+    // Add event listener
+    window.addEventListener('resize', handleResize);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [theme.breakpoints.values.sm]);
   
   // Generate historical data for charts
   useEffect(() => {
-    if (selectedDate) {
+    const fetchHistoricalData = async () => {
+      if (!selectedDate) return;
+      
       let startDate;
       
       switch(timeRange) {
@@ -140,22 +161,21 @@ const Dashboard = ({ open, onClose, selectedDate, instrument, useRealData }) => 
           startDate = moment(selectedDate).subtract(7, 'days');
       }
       
-      const endDate = moment(selectedDate);
+      // We'll pass startDate directly to getHistoricalChartData
       
-      const dates = [];
-      let currentDate = startDate.clone();
-      
-      while (currentDate.isSameOrBefore(endDate, 'day')) {
-        dates.push(currentDate.clone());
-        currentDate.add(1, 'day');
+      // Use marketDataService.getHistoricalChartData instead for more efficient fetching
+      try {
+        const chartData = await marketDataService.getHistoricalChartData(startDate, instrument);
+        console.log(`Loaded ${chartData.length} days of historical data`);
+        setHistoricalData(chartData.filter(data => data && data.isMarketOpen !== false));
+      } catch (err) {
+        console.error('Error fetching historical chart data:', err);
+        setHistoricalData([]);
       }
-      
-      const histData = dates.map(date => marketDataService.getHistoricalData(date, instrument, useRealData))
-        .filter(data => data && data.isMarketOpen);
-      
-      setHistoricalData(histData);
-    }
-  }, [selectedDate, instrument, timeRange]);
+    };
+    
+    fetchHistoricalData();
+  }, [selectedDate, instrument, timeRange, useRealData]);
 
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
@@ -172,14 +192,19 @@ const Dashboard = ({ open, onClose, selectedDate, instrument, useRealData }) => 
   const getPriceChartData = () => {
     if (!historicalData || historicalData.length === 0) return [];
     
-    return historicalData.map(day => ({
-      date: day.date,
-      open: day.price * 0.99,  // Simulate OHLC data
-      high: day.price * 1.03,
-      low: day.price * 0.97,
-      close: day.price,
-      formattedDate: moment(day.date).format('MMM D')
-    }));
+    return historicalData.map(day => {
+      // Check if we already have proper OHLC data or need to simulate it
+      const hasProperData = day.open && day.high && day.low && day.close;
+      
+      return {
+        date: day.date,
+        open: hasProperData ? day.open : (day.price || day.close) * 0.99,
+        high: hasProperData ? day.high : (day.price || day.close) * 1.03,
+        low: hasProperData ? day.low : (day.price || day.close) * 0.97,
+        close: hasProperData ? day.close : (day.price || day.close),
+        formattedDate: moment(day.date).format('MMM D')
+      };
+    });
   };
   
   // Format data for volume chart
@@ -188,7 +213,7 @@ const Dashboard = ({ open, onClose, selectedDate, instrument, useRealData }) => 
     
     return historicalData.map(day => ({
       date: day.date,
-      volume: day.volume,
+      volume: day.volume || 0, // Ensure volume is not undefined
       formattedDate: moment(day.date).format('MMM D')
     }));
   };
@@ -199,20 +224,36 @@ const Dashboard = ({ open, onClose, selectedDate, instrument, useRealData }) => 
     
     return historicalData.map(day => ({
       date: day.date,
-      volatility: day.volatility,
+      volatility: day.volatility || 2, // Default volatility if not available
       formattedDate: moment(day.date).format('MMM D')
     }));
   };
   
   // Format intraday data
   const getIntradayData = () => {
-    if (!data || !data.intradayData) return [];
+    // Check for intraday data in the data object
+    if (data && data.intraday) {
+      return data.intraday;
+    }
     
-    return data.intradayData || Array.from({length: 8}, (_, i) => ({
-      hour: `${9 + i}:00`,
-      price: data.price * (1 + (Math.random() - 0.5) * 0.02),
-      volume: data.volume * (Math.random() * 0.5 + 0.5)
-    }));
+    // Check for intraday in the volumeByHour property
+    if (data && data.volumeByHour) {
+      return data.volumeByHour;
+    }
+    
+    // Generate mock intraday data as fallback
+    if (data) {
+      const basePrice = data.price || data.close || 100;
+      const baseVolume = data.volume || 1000;
+      
+      return Array.from({length: 8}, (_, i) => ({
+        hour: `${9 + i}:00`,
+        price: basePrice * (1 + (Math.random() - 0.5) * 0.02),
+        volume: baseVolume * (Math.random() * 0.5 + 0.5)
+      }));
+    }
+    
+    return [];
   };
 
   return (
@@ -222,50 +263,96 @@ const Dashboard = ({ open, onClose, selectedDate, instrument, useRealData }) => 
       onClose={onClose}
       PaperProps={{
         sx: { 
-          width: expandedView ? '90%' : '80%', 
+          width: { 
+            xs: '100%', 
+            sm: expandedView ? '95%' : '85%', 
+            md: expandedView ? '90%' : '80%' 
+          }, 
           maxWidth: '1200px',
-          borderTopLeftRadius: 8,
-          borderBottomLeftRadius: 8
+          borderTopLeftRadius: { xs: 0, sm: 8 },
+          borderBottomLeftRadius: { xs: 0, sm: 8 }
         }
       }}
     >
-      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflowX: 'hidden' }}>
         {/* Header */}
         <Box 
           sx={{ 
-            p: 2, 
+            p: { xs: 1.5, sm: 2 }, 
             display: 'flex', 
-            alignItems: 'center',
+            flexDirection: { xs: 'column', sm: 'row' },
+            alignItems: { xs: 'flex-start', sm: 'center' },
             justifyContent: 'space-between',
+            gap: { xs: 1, sm: 0 },
             borderBottom: 1,
             borderColor: 'divider',
             backgroundColor: theme.palette.primary.main,
             color: theme.palette.primary.contrastText
           }}
         >
-          <Box>
-            <Typography variant="h5" component="h2" sx={{ fontWeight: 600 }}>
+          <Box sx={{ width: { xs: '100%', sm: 'auto' } }}>
+            <Typography 
+              variant="h5" 
+              component="h2" 
+              sx={{ 
+                fontWeight: 600,
+                fontSize: { xs: '1.1rem', sm: '1.25rem', md: '1.5rem' },
+                pr: { xs: 5, sm: 0 }, // Space for close button on mobile
+                position: { xs: 'relative', sm: 'static' }
+              }}
+            >
               {instrument?.name || instrument || 'Market Data'}
             </Typography>
-            <Typography variant="subtitle2">
+            <Typography 
+              variant="subtitle2"
+              sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+            >
               {selectedDate ? moment(selectedDate).format('dddd, MMMM D, YYYY') : 'Select a date'}
             </Typography>
           </Box>
           
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box 
+            sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 1,
+              position: { xs: 'absolute', sm: 'static' },
+              top: { xs: '1rem', sm: 'auto' },
+              right: { xs: '1rem', sm: 'auto' }
+            }}
+          >
             <Tooltip title="Export Data">
               <IconButton 
-                size="small" 
-                sx={{ color: theme.palette.primary.contrastText }}
+                size={isSmallScreen ? "small" : "medium"}
+                sx={{ 
+                  color: theme.palette.primary.contrastText,
+                  display: { xs: 'none', sm: 'flex' } // Hide on mobile
+                }}
               >
-                <FileDownload />
+                <FileDownload fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title={expandedView ? "Collapse View" : "Expand View"}>
+              <IconButton 
+                onClick={() => setExpandedView(prev => !prev)}
+                size={isSmallScreen ? "small" : "medium"}
+                sx={{ 
+                  color: theme.palette.primary.contrastText,
+                  display: { xs: 'none', sm: 'flex' } // Hide on mobile
+                }}
+              >
+                {expandedView ? 
+                  <CompareArrows fontSize={isSmallScreen ? "small" : "medium"} /> : 
+                  <CalendarMonth fontSize={isSmallScreen ? "small" : "medium"} />
+                }
               </IconButton>
             </Tooltip>
             <IconButton 
               onClick={onClose}
+              size={isSmallScreen ? "small" : "medium"}
               sx={{ color: theme.palette.primary.contrastText }}
             >
-              <Close />
+              <Close fontSize={isSmallScreen ? "small" : "medium"} />
             </IconButton>
           </Box>
         </Box>
@@ -277,16 +364,52 @@ const Dashboard = ({ open, onClose, selectedDate, instrument, useRealData }) => 
           variant="scrollable"
           scrollButtons="auto"
           sx={{ 
-            px: 2,
+            px: { xs: 1, sm: 2 },
             borderBottom: 1,
             borderColor: 'divider',
+            minHeight: { xs: '48px', sm: 'auto' },
+            '& .MuiTab-root': {
+              minHeight: { xs: '48px', sm: 'auto' },
+              py: { xs: 1, sm: 1.5 },
+              fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' }
+            }
           }}
         >
-          <Tab icon={<ShowChart />} iconPosition="start" label="Overview" value={TABS.OVERVIEW} />
-          <Tab icon={<PriceCheck />} iconPosition="start" label="Price Analysis" value={TABS.PRICE} />
-          <Tab icon={<Bolt />} iconPosition="start" label="Volatility" value={TABS.VOLATILITY} />
-          <Tab icon={<BarChartIcon />} iconPosition="start" label="Volume" value={TABS.VOLUME} />
-          <Tab icon={<Autorenew />} iconPosition="start" label="Technical" value={TABS.TECHNICAL} />
+          <Tab 
+            icon={<ShowChart fontSize={isSmallScreen ? "small" : "medium"} />} 
+            iconPosition="start" 
+            label={isSmallScreen ? "" : "Overview"} 
+            value={TABS.OVERVIEW}
+            sx={{ minWidth: { xs: '48px', sm: 'auto' } }}
+          />
+          <Tab 
+            icon={<PriceCheck fontSize={isSmallScreen ? "small" : "medium"} />} 
+            iconPosition="start" 
+            label={isSmallScreen ? "" : "Price Analysis"} 
+            value={TABS.PRICE}
+            sx={{ minWidth: { xs: '48px', sm: 'auto' } }}
+          />
+          <Tab 
+            icon={<Bolt fontSize={isSmallScreen ? "small" : "medium"} />} 
+            iconPosition="start" 
+            label={isSmallScreen ? "" : "Volatility"} 
+            value={TABS.VOLATILITY}
+            sx={{ minWidth: { xs: '48px', sm: 'auto' } }}
+          />
+          <Tab 
+            icon={<BarChartIcon fontSize={isSmallScreen ? "small" : "medium"} />} 
+            iconPosition="start" 
+            label={isSmallScreen ? "" : "Volume"} 
+            value={TABS.VOLUME}
+            sx={{ minWidth: { xs: '48px', sm: 'auto' } }}
+          />
+          <Tab 
+            icon={<Autorenew fontSize={isSmallScreen ? "small" : "medium"} />} 
+            iconPosition="start" 
+            label={isSmallScreen ? "" : "Technical"} 
+            value={TABS.TECHNICAL}
+            sx={{ minWidth: { xs: '48px', sm: 'auto' } }}
+          />
         </Tabs>
         
         {/* Content */}
@@ -306,6 +429,17 @@ const Dashboard = ({ open, onClose, selectedDate, instrument, useRealData }) => 
             </Box>
           ) : (
             <>
+              {/* Debug data */}
+              <Box sx={{ p: 2, borderBottom: '1px solid rgba(0,0,0,0.1)', bgcolor: 'rgba(0,0,0,0.05)' }}>
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>Debug Data:</Typography>
+                <Typography variant="body2" sx={{ fontSize: '0.7rem' }}>
+                  Data loaded: {data ? 'Yes' : 'No'}<br />
+                  Market open: {data?.isMarketOpen ? 'Yes' : 'No'}<br />
+                  Price: {data?.price || data?.close || 'Not available'}<br />
+                  Historical data: {historicalData?.length || 0} days
+                </Typography>
+              </Box>
+              
               {data?.isMarketOpen ? (
                 <>
                   {/* Overview Tab */}
@@ -322,18 +456,18 @@ const Dashboard = ({ open, onClose, selectedDate, instrument, useRealData }) => 
                               </Typography>
                               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <Typography variant="h4" component="div">
-                                  {formatPrice(data.price, instrument)}
+                                  {formatPrice(data?.price || data?.close || 0, instrument)}
                                 </Typography>
                                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                  {getTrendIcon(data.priceChange, theme)}
+                                  {getTrendIcon(data?.priceChange || (data?.close && data?.open ? data.close - data.open : 0), theme)}
                                   <Typography 
                                     variant="body2" 
                                     sx={{ 
-                                      color: getTrendColor(data.priceChange, theme),
+                                      color: getTrendColor(data?.priceChange || (data?.close && data?.open ? data.close - data.open : 0), theme),
                                       ml: 0.5
                                     }}
                                   >
-                                    {formatPercentage(data.percentChange)}
+                                    {formatPercentage(data?.percentChange || (data?.close && data?.open ? (data.close - data.open) / data.open * 100 : 0))}
                                   </Typography>
                                 </Box>
                               </Box>

@@ -54,8 +54,8 @@ export const AppContextProvider = ({ children }) => {
   // Color theme
   const [colorTheme, setColorTheme] = useState('default'); // default, contrast, colorblind
   
-  // Data source toggle
-  const [useRealData, setUseRealData] = useState(false);
+  // Data source toggle - default to true to show real API data
+  const [useRealData, setUseRealData] = useState(true);
 
   // Navigation functions
   const nextMonth = useCallback(() => {

@@ -66,8 +66,10 @@ export const getCalendarDaysForMonth = (month) => {
 
 // Generate calendar days for a week view
 export const getCalendarDaysForWeek = (date) => {
+  // Ensure we start on Sunday (moment's default week start)
   const startOfWeek = moment(date).startOf('week');
   
+  // Create array with exactly 7 days, Sunday through Saturday
   const days = [];
   for (let i = 0; i < 7; i++) {
     days.push(startOfWeek.clone().add(i, 'day'));
