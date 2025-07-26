@@ -27,19 +27,24 @@ const CalendarCell = ({
   // Don't show market data for future dates
   const dayData = (marketData && dateKey && !isFutureDate) ? (marketData[dateKey] || null) : null;
   
-  // Calculate volatility color based on volatility level
+  // Calculate volatility color based on volatility level using theme colors
   const getVolatilityColor = (volatility) => {
     if (!volatility) return 'transparent';
     
+    const customColors = theme.palette.custom?.calendar;
+    
     if (volatility < 5) {
-      // Low volatility: Green shades
-      return `rgba(76, 175, 80, ${Math.min(volatility / 5, 0.8)})`;
+      // Low volatility: Use theme's low volatility color
+      const color = customColors?.volatilityLow || theme.palette.success.main;
+      return `${color}20`; // 20% opacity
     } else if (volatility < 15) {
-      // Medium volatility: Yellow/Orange shades
-      return `rgba(255, 152, 0, ${Math.min((volatility - 5) / 10, 0.8)})`;
+      // Medium volatility: Use theme's medium volatility color
+      const color = customColors?.volatilityMedium || theme.palette.warning.main;
+      return `${color}30`; // 30% opacity
     } else {
-      // High volatility: Red shades
-      return `rgba(244, 67, 54, ${Math.min((volatility - 15) / 20, 0.8)})`;
+      // High volatility: Use theme's high volatility color
+      const color = customColors?.volatilityHigh || theme.palette.error.main;
+      return `${color}40`; // 40% opacity
     }
   };
   
@@ -260,8 +265,8 @@ const CalendarCell = ({
         sx={{
           minHeight: viewMode === 'day' ? 120 : viewMode === 'week' ? 100 : 80,
           p: 1,
-          border: isSelected ? '2px solid' : '1px solid #e0e0e0',
-          borderColor: isSelected ? theme.palette.primary.main : '#e0e0e0',
+          border: isSelected ? '2px solid' : '1px solid',
+          borderColor: isSelected ? theme.palette.primary.main : (theme.palette.custom?.calendar?.cellBorder || theme.palette.divider),
           cursor: isFutureDate ? 'not-allowed' : 'pointer',
           backgroundColor: isFutureDate 
             ? 'rgba(0, 0, 0, 0.02)' 

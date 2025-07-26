@@ -211,7 +211,7 @@ const Dashboard = ({
         }
       }}
     >
-      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: theme.palette.background.default }}>
         {/* Header */}
         <Box 
           sx={{ 
@@ -220,7 +220,7 @@ const Dashboard = ({
             alignItems: 'center', 
             justifyContent: 'space-between',
             borderBottom: 1,
-            borderColor: 'divider',
+            borderColor: theme.palette.divider,
             backgroundColor: theme.palette.primary.main,
             color: theme.palette.primary.contrastText
           }}
@@ -244,8 +244,20 @@ const Dashboard = ({
         </Box>
 
         {/* Tabs */}
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs value={activeTab} onChange={handleTabChange} aria-label="dashboard tabs">
+        <Box sx={{ borderBottom: 1, borderColor: theme.palette.divider, backgroundColor: theme.palette.background.paper }}>
+          <Tabs 
+            value={activeTab} 
+            onChange={handleTabChange} 
+            aria-label="dashboard tabs"
+            sx={{
+              '& .MuiTab-root': {
+                color: theme.palette.text.primary,
+              },
+              '& .Mui-selected': {
+                color: theme.palette.primary.main,
+              }
+            }}
+          >
             <Tab icon={<AttachMoney />} label="Overview" />
             <Tab icon={<ShowChart />} label="Price" />
             <Tab icon={<TrendingUp />} label="Volatility" />

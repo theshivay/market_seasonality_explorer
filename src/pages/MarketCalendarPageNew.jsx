@@ -16,11 +16,13 @@ import {
   Alert,
   Grid,
   Tabs,
-  Tab
+  Tab,
+  useTheme
 } from '@mui/material';
 import { Settings, Api, Storage, Keyboard, Speed, CalendarToday, CheckCircle } from '@mui/icons-material';
 import { Link as RouterLink } from 'react-router-dom';
 import { AppContext } from '../context/AppContext';
+import { ThemeSelector } from '../context/ThemeContext.jsx';
 import Calendar from '../components/Calendar/Calendar';
 import Dashboard from '../components/Dashboard/DashboardSimple';
 import RealTimeDataDashboard from '../components/RealTimeDataDashboard';
@@ -30,6 +32,7 @@ import ExportButton from '../components/ExportButton';
 import marketDataService from '../services/marketDataService';
 
 const MarketCalendarPage = () => {
+  const theme = useTheme();
   
   // State for dashboard and settings
   const [showDashboard, setShowDashboard] = useState(false);
@@ -122,12 +125,15 @@ const MarketCalendarPage = () => {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#f5f5f5' }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: theme.palette.background.default }}>
       <AppBar 
         position="static" 
         sx={{ 
-          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-          backgroundImage: 'linear-gradient(to right, #1A365D, #2E5077)'
+          borderBottom: `1px solid ${theme.palette.divider}`,
+          backgroundImage: theme.palette.mode === 'dark' 
+            ? 'linear-gradient(to right, #0D1B2A, #1B2632)' 
+            : 'linear-gradient(to right, #1A365D, #2E5077)',
+          color: theme.palette.primary.contrastText
         }}
       >
         <Toolbar 
@@ -148,7 +154,7 @@ const MarketCalendarPage = () => {
               to="/"
               color="inherit"
               size="small"
-              sx={{ ml: 2 }}
+              sx={{ ml: 2, color: theme.palette.primary.contrastText }}
             >
               ← Home
             </Button>
@@ -162,6 +168,7 @@ const MarketCalendarPage = () => {
               sx={{ 
                 ml: 1,
                 borderColor: 'rgba(255, 255, 255, 0.3)',
+                color: theme.palette.primary.contrastText,
                 '&:hover': {
                   borderColor: 'white',
                   backgroundColor: 'rgba(255, 255, 255, 0.1)',
@@ -169,6 +176,25 @@ const MarketCalendarPage = () => {
               }}
             >
               📤 Export Demo
+            </Button>
+            
+            <Button
+              component={RouterLink}
+              to="/theme-demo"
+              color="inherit"
+              size="small"
+              variant="outlined"
+              sx={{ 
+                ml: 1,
+                borderColor: 'rgba(255, 255, 255, 0.3)',
+                color: theme.palette.primary.contrastText,
+                '&:hover': {
+                  borderColor: 'white',
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                },
+              }}
+            >
+              🎨 Themes
             </Button>
           </Box>
 
@@ -200,7 +226,7 @@ const MarketCalendarPage = () => {
                 />
               }
               label={
-                <Typography variant="caption" sx={{ color: 'white' }}>
+                <Typography variant="caption" sx={{ color: theme.palette.primary.contrastText }}>
                   {useRealData ? 'Live Data' : 'Demo Data'}
                 </Typography>
               }
@@ -225,7 +251,7 @@ const MarketCalendarPage = () => {
               variant="outlined"
               size="small"
               sx={{ 
-                color: 'white',
+                color: theme.palette.primary.contrastText,
                 borderColor: 'rgba(255, 255, 255, 0.3)',
                 '&:hover': {
                   borderColor: 'white',
@@ -242,6 +268,12 @@ const MarketCalendarPage = () => {
               calendarData={[]} // Will be populated when calendar renders
               variant="button"
               size="small"
+            />
+
+            {/* Theme Selector */}
+            <ThemeSelector 
+              variant="menu"
+              size="large"
             />
 
             {/* Settings Menu */}
@@ -276,22 +308,33 @@ const MarketCalendarPage = () => {
         maxWidth="xl" 
         sx={{ 
           py: { xs: 2, md: 3 },
-          px: { xs: 1, sm: 2, md: 3 }
+          px: { xs: 1, sm: 2, md: 3 },
+          backgroundColor: theme.palette.background.default
         }}
       >
         {/* Header with Current Date and Instrument Info */}
         <Box sx={{ mb: 3 }}>
-          <Typography variant="h4" sx={{ mb: 1, fontWeight: 600 }}>
+          <Typography variant="h4" sx={{ mb: 1, fontWeight: 600, color: theme.palette.text.primary }}>
             Market Seasonality Explorer
           </Typography>
-          <Typography variant="subtitle1" color="text.secondary">
+          <Typography variant="subtitle1" sx={{ color: theme.palette.text.secondary }}>
             {currentDate.format('MMMM YYYY')} • {selectedInstrument?.name} • {useRealData ? 'Live Enhanced Data' : 'Demo Data'}
           </Typography>
           
           {/* Data Source Status Alert */}
           <Alert 
             severity={useRealData ? "success" : "info"} 
-            sx={{ mt: 2, mb: 2 }}
+            sx={{ 
+              mt: 2, 
+              mb: 2,
+              backgroundColor: theme.palette.mode === 'dark' 
+                ? (useRealData ? 'rgba(76, 175, 80, 0.1)' : 'rgba(33, 150, 243, 0.1)')
+                : undefined,
+              color: theme.palette.text.primary,
+              '& .MuiAlert-icon': {
+                color: useRealData ? theme.palette.success.main : theme.palette.info.main
+              }
+            }}
           >
             <Typography variant="body2">
               <strong>Data Source:</strong> {useRealData ? 'Enhanced API (Multi-Asset Real Market Data)' : 'Demo Data (Static Values)'}
@@ -305,11 +348,19 @@ const MarketCalendarPage = () => {
         </Box>
 
         {/* Main Content Tabs */}
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+        <Box sx={{ borderBottom: 1, borderColor: theme.palette.divider, mb: 3 }}>
           <Tabs 
             value={currentTab} 
             onChange={(event, newValue) => setCurrentTab(newValue)}
             aria-label="main content tabs"
+            sx={{
+              '& .MuiTab-root': {
+                color: theme.palette.text.primary,
+              },
+              '& .Mui-selected': {
+                color: theme.palette.primary.main,
+              }
+            }}
           >
             <Tab 
               icon={<CalendarToday />} 
@@ -338,18 +389,28 @@ const MarketCalendarPage = () => {
             {/* Left Column - Controls */}
             <Grid item xs={12} lg={3}>
               {/* Keyboard Navigation Help */}
-              <Paper elevation={1} sx={{ p: 2, mt: 2 }}>
+              <Paper 
+                elevation={1} 
+                sx={{ 
+                  p: 2, 
+                  mt: 2, 
+                  backgroundColor: theme.palette.background.paper,
+                  border: `1px solid ${theme.palette.divider}`
+                }}
+              >
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                  <Keyboard sx={{ mr: 1, color: 'primary.main' }} />
-                  <Typography variant="subtitle2">Keyboard Navigation</Typography>
+                  <Keyboard sx={{ mr: 1, color: theme.palette.primary.main }} />
+                  <Typography variant="subtitle2" sx={{ color: theme.palette.text.primary }}>
+                    Keyboard Navigation
+                  </Typography>
                 </Box>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                <Typography variant="caption" sx={{ color: theme.palette.text.secondary, display: 'block', mb: 0.5 }}>
                   Arrow Keys: Navigate dates
                 </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                <Typography variant="caption" sx={{ color: theme.palette.text.secondary, display: 'block', mb: 0.5 }}>
                   Enter: Open dashboard
                 </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                <Typography variant="caption" sx={{ color: theme.palette.text.secondary, display: 'block' }}>
                   Escape: Reset selection
                 </Typography>
               </Paper>

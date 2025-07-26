@@ -1,29 +1,36 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import { CssBaseline, ThemeProvider, responsiveFontSizes } from '@mui/material'
+import { Box } from '@mui/material'
 import { AppContextProvider } from './context/AppContextProvider'
+import { CustomThemeProvider } from './context/ThemeContext.jsx'
 import MarketCalendarPageNew from './pages/MarketCalendarPageNew'
 import ExportDemo from './pages/ExportDemo'
-import theme from './theme'
-
-// Create responsive theme with automatic font scaling
-const responsiveTheme = responsiveFontSizes(theme);
+import ThemeDemo from './pages/ThemeDemo'
 
 function App() {
   return (
-    <ThemeProvider theme={responsiveTheme}>
-      <CssBaseline />
+    <CustomThemeProvider>
       <AppContextProvider>
         <Router>
-          <div className="min-h-screen w-full bg-gray-100 dark:bg-gray-900 flex flex-col">
+          <Box 
+            sx={{ 
+              minHeight: '100vh', 
+              width: '100%', 
+              backgroundColor: 'background.default',
+              color: 'text.primary',
+              display: 'flex',
+              flexDirection: 'column'
+            }}
+          >
             <Routes>
               <Route path="/" element={<MarketCalendarPageNew />} />
               <Route path="/market-calendar" element={<MarketCalendarPageNew />} />
               <Route path="/export-demo" element={<ExportDemo />} />
+              <Route path="/theme-demo" element={<ThemeDemo />} />
             </Routes>
-          </div>
+          </Box>
         </Router>
       </AppContextProvider>
-    </ThemeProvider>
+    </CustomThemeProvider>
   )
 }
 

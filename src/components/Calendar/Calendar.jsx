@@ -377,6 +377,8 @@ const Calendar = ({ onDaySelect }) => {
         },
         WebkitOverflowScrolling: 'touch', // For smooth scrolling on iOS
         outline: 'none', // Remove focus outline for clean look
+        backgroundColor: theme.palette.background.default,
+        color: theme.palette.text.primary,
         '&:focus': {
           outline: '2px solid',
           outlineColor: 'primary.main',
@@ -395,9 +397,11 @@ const Calendar = ({ onDaySelect }) => {
           mb: { xs: 1, sm: 1.5, md: 2 }, 
           borderRadius: { xs: 1, sm: 2 },
           background: theme.palette.background.paper,
+          color: theme.palette.text.primary,
           position: 'sticky',
           top: 0,
           zIndex: 10,
+          border: `1px solid ${theme.palette.divider}`,
         }}
       >
         <Box 

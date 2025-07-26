@@ -20,9 +20,11 @@ const CalendarHeader = ({ viewMode = 'month' }) => {
           py: 1.5,
           borderBottom: `1px solid ${theme.palette.divider}`,
           borderRight: index < 6 ? `1px solid ${theme.palette.divider}` : 'none',
-          bgcolor: theme.palette.mode === 'light' 
-            ? theme.palette.grey[50] 
-            : theme.palette.grey[900],
+          bgcolor: theme.palette.custom?.calendar?.headerBackground || (
+            theme.palette.mode === 'light' 
+              ? theme.palette.grey[50] 
+              : theme.palette.grey[900]
+          ),
           gridColumn: index + 1, // Explicitly set column position
           display: 'flex',
           alignItems: 'center',
@@ -35,7 +37,7 @@ const CalendarHeader = ({ viewMode = 'month' }) => {
             fontWeight: 600,
             color: [0, 6].includes(index) 
               ? theme.palette.error.main 
-              : theme.palette.text.primary
+              : (theme.palette.custom?.calendar?.headerText || theme.palette.text.primary)
           }}
         >
           {day}
