@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect, useCallback } from 'react';
+import React, { useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Box,
   Grid, 
@@ -29,12 +29,14 @@ import CalendarHeader from './CalendarHeader';
 import CalendarCell from './CalendarCell';
 import WeeklyCalendarCell from './WeeklyCalendarCell';
 import DateRangeSelector from './DateRangeSelector';
+import ExportButton from '../ExportButton';
 import { getCalendarDaysForMonth } from '../../utils/dateUtils';
 import useMarketData from '../../hooks/useMarketData';
 
 const Calendar = ({ onDaySelect }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const calendarRef = useRef(null);
   
   console.log('Calendar component rendering...', { theme: !!theme, isMobile });
   
@@ -363,6 +365,7 @@ const Calendar = ({ onDaySelect }) => {
 
   return (
     <Box 
+      ref={calendarRef}
       className="calendar-container"
       tabIndex={0} // Make it focusable
       sx={{ 
@@ -544,6 +547,13 @@ const Calendar = ({ onDaySelect }) => {
                   <ZoomIn fontSize={isMobile ? "small" : "medium"} />
                 </IconButton>
               </Tooltip>
+              <ExportButton 
+                calendarElement={calendarRef.current}
+                calendarData={marketData}
+                analysisData={null}
+                variant="icon"
+                size={isMobile ? "small" : "medium"}
+              />
             </Box>
           </Box>
         </Box>

@@ -63,9 +63,27 @@ A React application that displays an interactive calendar for visualizing histor
   - Price charts and analysis
   - Volatility calculations
   - Volume and liquidity data
-  - Technical indicators
+  - **Technical indicators** (NEW)
+  - **Benchmark comparison** (NEW)
 - ✅ **Interactive charts** using Recharts library
 - ✅ **Export capabilities** for data analysis
+
+### 6. Advanced Analytics Features ✅ (NEW)
+- ✅ **VIX-like Volatility Index**: Market fear gauge calculation
+- ✅ **Moving Averages**: SMA 5, 10, 20, 50 with visual charts
+- ✅ **Technical Indicators**: 
+  - RSI (Relative Strength Index)
+  - Simple Moving Averages with crossover signals
+  - Price vs moving average analysis
+- ✅ **Benchmark Comparison**:
+  - Alpha (excess return) calculation
+  - Beta coefficient analysis
+  - Performance vs market benchmark
+  - Risk metrics (Sharpe ratio, Max drawdown, VaR)
+- ✅ **Advanced Volatility Metrics**:
+  - Annualized volatility
+  - Historical volatility analysis
+  - Fear & Greed index integration
 
 ## 🛠 Tech Stack
 
@@ -106,7 +124,8 @@ src/
 │   ├── dateUtils.jsx                # Date utility functions
 │   ├── dateRangeUtils.js            # Date range utilities
 │   ├── errorHandling.js             # Error handling utilities
-│   └── performance.js               # Performance optimization utils
+│   ├── performance.js               # Performance optimization utils
+│   └── technicalIndicators.js       # Technical analysis calculations (NEW)
 └── theme.js                         # Material-UI theme configuration
 ```
 
@@ -184,13 +203,27 @@ src/
 
 ## 🔗 API Integration
 
-The application integrates with the **OKX API** for real-time cryptocurrency market data:
-- **Free tier access** - No payment required for demo
-- **Real-time orderbook data**
-- **Historical price and volume data**
-- **Multiple cryptocurrency pairs**
+The application now features **Enhanced Multi-Asset API Integration** supporting multiple financial instruments:
 
-*Note: The application includes demo data mode for development and testing purposes.*
+### Cryptocurrency Data (Real-time)
+- **CoinGecko API** - Primary source for crypto market data
+- **Real-time WebSocket connections** - Live orderbook and ticker data via Binance, Coinbase, OKX
+- **Historical price and volume data** - Up to 2 years of daily data
+- **Multiple cryptocurrency pairs** - BTC, ETH, SOL, ADA, DOT, XRP, and more
+
+### Traditional Financial Instruments (Demo/API Ready)
+- **Stocks** - Major US equities (AAPL, GOOGL, MSFT, AMZN, TSLA, etc.)
+- **Forex** - Major currency pairs (EUR/USD, GBP/USD, USD/JPY, etc.)
+- **Commodities** - Gold, Silver, Oil, Natural Gas, Agricultural products
+- **Indices** - S&P 500, NASDAQ 100, Dow Jones, VIX
+
+### Real-time Features ✨
+- **Live Price Tickers** - Real-time price updates with 24h change and volume
+- **Order Book Data** - Live bid/ask spreads with market depth
+- **WebSocket Monitoring** - Connection status and health indicators
+- **Multi-Exchange Support** - Binance, Coinbase Pro, OKX WebSocket feeds
+
+*Note: Real-time data is currently available for cryptocurrencies. Traditional instruments show demo data and can be easily connected to paid APIs.*
 
 ## 📱 Responsive Design
 
@@ -224,16 +257,24 @@ The application is highly customizable:
 
 ## 🐛 Known Issues & Future Enhancements
 
+### ✅ Recently Implemented
+- **Multi-Asset Support** - Cryptocurrencies, stocks, forex, commodities, and indices
+- **Real-time WebSocket Integration** - Live orderbook and ticker data
+- **Enhanced API Service** - Unified data layer for multiple asset types
+- **Real-time Dashboard** - Live price monitoring and market depth visualization
+
 ### Current Limitations
-- Limited to cryptocurrency data (can be extended to other assets)
-- Demo data is static (real API provides dynamic data)
+- Real-time data limited to cryptocurrencies (traditional assets show demo data)
+- Some APIs require paid subscriptions for full historical data
+- WebSocket connections limited to major exchanges
 
 ### Future Enhancements
-- Support for traditional financial instruments (stocks, forex)
-- Advanced technical analysis tools
-- Data export in multiple formats
-- Real-time updates and WebSocket integration
-- Advanced charting capabilities
+- **Advanced Technical Analysis** - More technical indicators and charting tools
+- **Data Export Features** - CSV, JSON, and PDF export capabilities
+- **Portfolio Tracking** - Multi-asset portfolio management
+- **Advanced Charting** - Candlestick charts, drawing tools, and advanced visualizations
+- **News Integration** - Market news and sentiment analysis
+- **Mobile App** - React Native companion app
 
 ## 📄 License
 

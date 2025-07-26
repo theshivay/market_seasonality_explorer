@@ -1,10 +1,12 @@
 /**
  * MarketDataService - Real Market Data Integration
- * This service provides market data functionality using the CoinGecko API.
+ * This service provides market data functionality using enhanced API services.
  * Demo data is available as fallback when real data is disabled.
  */
 import moment from 'moment';
 import { fetchRealMarketData, fetchExtendedMarketData } from './apiService';
+import { fetchEnhancedMarketData, detectAssetType, ASSET_TYPES } from './enhancedApiService';
+// import fetchEnhancedMarketData, { detectAssetType, ASSET_TYPES } from './enhancedApiService';
 
 class MarketDataService {
   constructor() {
@@ -23,14 +25,15 @@ class MarketDataService {
   
   /**
    * Get daily market data for a specific date and instrument
-   * Fetches data from OKX API when useRealData is true
+   * Fetches data from enhanced API service when useRealData is true
+   * Supports multiple asset types: crypto, stocks, forex, commodities, indices
    * 
    * @param {string|moment} date - The date to get data for
    * @param {object|string} instrument - The instrument object or ID
-   * @returns {Promise<Object>} - Market data from OKX API
+   * @returns {Promise<Object>} - Market data from enhanced API service
    */
   async getDailyData(date, instrument) {
-    const instrumentId = instrument?.id || instrument;
+    const instrumentId = instrument?.id || instrument?.symbol || instrument;
     const dateStr = moment(date).format('YYYY-MM-DD');
     const currentDate = moment().format('YYYY-MM-DD'); // Today's date for logging
     console.log(`[MarketDataService] getDailyData called for ${instrumentId} on ${dateStr} (Today is ${currentDate})`);
@@ -99,41 +102,51 @@ class MarketDataService {
       console.log(`[MarketDataService] Using demo data for ${instrumentId}`);
       return getFallbackData();
     }
-    
+
     try {
-      // Get data from OKX API - expand date range to get entire month
-      console.log(`[MarketDataService] Fetching OKX data for ${instrumentId} on ${dateStr}`);
+      // Detect asset type and fetch data accordingly
+      const assetType = detectAssetType(instrumentId);
+      console.log(`[MarketDataService] Detected asset type: ${assetType} for ${instrumentId}`);
+      
+      // Get data from enhanced API service - expand date range to get entire month
+      console.log(`[MarketDataService] Fetching enhanced API data for ${instrumentId} on ${dateStr}`);
       
       // For better data coverage, get the entire month
       const startDate = moment(date).startOf('month');
       const endDate = moment(date).endOf('month');
       
-      // Convert to Unix timestamps (seconds since epoch)
-      const start = startDate.unix();
-      const end = endDate.unix();
-      
       console.log(`[MarketDataService] Date range: ${startDate.format('YYYY-MM-DD')} to ${endDate.format('YYYY-MM-DD')}`);
-      console.log(`[MarketDataService] Using timestamps: ${start} to ${end}`);
       
-      // Fetch data using the CoinGecko API - fix the parameter format
-      // Extract base symbol from pair format (e.g., 'BTC-USDT' -> 'BTC')
-      const baseSymbol = instrumentId.split('-')[0].split('USDT')[0].toUpperCase();
-      console.log(`[MarketDataService] Extracted base symbol: ${baseSymbol} from ${instrumentId}`);
+      // Extract symbol for API call
+      let apiSymbol = instrumentId;
+      if (assetType === ASSET_TYPES.CRYPTO) {
+        // Extract base symbol from pair format (e.g., 'BTC-USDT' -> 'BTC')
+        apiSymbol = instrumentId.split('-')[0].split('USDT')[0].toUpperCase();
+        console.log(`[MarketDataService] Extracted crypto symbol: ${apiSymbol} from ${instrumentId}`);
+      }
       
-      // Try to fetch extended data first (2 years), fallback to regular data
+      // Fetch data using enhanced API service
       let result;
       try {
-        console.log(`[MarketDataService] Attempting to fetch extended historical data...`);
-        result = await fetchExtendedMarketData(baseSymbol, 2);
+        console.log(`[MarketDataService] Attempting to fetch enhanced market data...`);
+        result = await fetchEnhancedMarketData(apiSymbol, assetType);
         
-        // If extended fetch failed or returned no data, try regular fetch
-        if (!result || result.dataSource === 'error' || !result.dailyData || result.dailyData.length === 0) {
-          console.log(`[MarketDataService] Extended fetch failed, trying regular fetch...`);
-          result = await fetchRealMarketData(baseSymbol);
+        // For crypto, try extended data if regular fetch didn't work well
+        if (assetType === ASSET_TYPES.CRYPTO && (!result || result.dataSource === 'fallback' || !result.dailyData || result.dailyData.length < 30)) {
+          console.log(`[MarketDataService] Trying extended crypto data fetch...`);
+          const extendedResult = await fetchExtendedMarketData(apiSymbol, 2);
+          if (extendedResult && extendedResult.dailyData && extendedResult.dailyData.length > result?.dailyData?.length) {
+            result = extendedResult;
+          }
         }
       } catch (error) {
-        console.log(`[MarketDataService] Extended fetch error, trying regular fetch:`, error);
-        result = await fetchRealMarketData(baseSymbol);
+        console.log(`[MarketDataService] Enhanced fetch error:`, error);
+        // Fallback to basic crypto API for crypto assets
+        if (assetType === ASSET_TYPES.CRYPTO) {
+          result = await fetchRealMarketData(apiSymbol);
+        } else {
+          result = await fetchEnhancedMarketData(apiSymbol, assetType);
+        }
       }
       
       console.log(`[MarketDataService] API result:`, result);

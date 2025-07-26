@@ -3,26 +3,10 @@ import PropTypes from 'prop-types';
 import moment from 'moment';
 import { AppContext } from './AppContext';
 import { VIEW_MODES, KEYBOARD_SHORTCUTS } from '../utils/constants';
+import { getAllInstruments } from '../services/enhancedApiService';
 
-// Available financial instruments
-const INSTRUMENTS = [
-  // OKX compatible instruments (tested working)
-  { id: 'BTC-USDT', name: 'Bitcoin (BTC/USDT)' },
-  { id: 'ETH-USDT', name: 'Ethereum (ETH/USDT)' },
-  { id: 'SOL-USDT', name: 'Solana (SOL/USDT)' },
-  { id: 'ADA-USDT', name: 'Cardano (ADA/USDT)' },
-  { id: 'DOT-USDT', name: 'Polkadot (DOT/USDT)' },
-  { id: 'XRP-USDT', name: 'Ripple (XRP/USDT)' },
-  
-  // Additional OKX pairs
-  { id: 'BTC-USD', name: 'Bitcoin (BTC/USD)' },
-  { id: 'ETH-USD', name: 'Ethereum (ETH/USD)' },
-  
-  // Legacy format (will be converted by API service)
-  { id: 'BTCUSDT', name: 'Bitcoin (Binance Format)' },
-  { id: 'ETHUSDT', name: 'Ethereum (Binance Format)' },
-  { id: 'SOLUSDT', name: 'Solana (Binance Format)' },
-];
+// Get all available financial instruments
+const INSTRUMENTS = getAllInstruments();
 
 export const AppContextProvider = ({ children }) => {
   // Date state

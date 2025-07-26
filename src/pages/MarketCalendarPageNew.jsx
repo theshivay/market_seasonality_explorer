@@ -9,21 +9,24 @@ import {
   IconButton,
   Menu,
   MenuItem,
-  Select,
-  FormControl,
-  InputLabel,
   Switch,
   FormControlLabel,
   Tooltip,
   Button,
   Alert,
-  Grid
+  Grid,
+  Tabs,
+  Tab
 } from '@mui/material';
-import { Settings, Api, Storage, Keyboard } from '@mui/icons-material';
+import { Settings, Api, Storage, Keyboard, Speed, CalendarToday, CheckCircle } from '@mui/icons-material';
 import { Link as RouterLink } from 'react-router-dom';
 import { AppContext } from '../context/AppContext';
 import Calendar from '../components/Calendar/Calendar';
 import Dashboard from '../components/Dashboard/DashboardSimple';
+import RealTimeDataDashboard from '../components/RealTimeDataDashboard';
+import EnhancedInstrumentSelector from '../components/EnhancedInstrumentSelector';
+import ImplementationSummary from '../components/ImplementationSummary';
+import ExportButton from '../components/ExportButton';
 import marketDataService from '../services/marketDataService';
 
 const MarketCalendarPage = () => {
@@ -33,6 +36,7 @@ const MarketCalendarPage = () => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedDateData, setSelectedDateData] = useState(null);
   const [settingsAnchorEl, setSettingsAnchorEl] = useState(null);
+  const [currentTab, setCurrentTab] = useState(0); // 0 = Calendar, 1 = Real-time Data, 2 = Implementation Summary
   
   // Filter states (currently unused but reserved for future features)
   // eslint-disable-next-line no-unused-vars
@@ -117,15 +121,6 @@ const MarketCalendarPage = () => {
     setSettingsAnchorEl(null);
   };
 
-  // Handle instrument change
-  const handleInstrumentChange = (event) => {
-    const instrumentId = event.target.value;
-    const instrument = INSTRUMENTS.find(inst => inst.id === instrumentId);
-    if (instrument) {
-      setSelectedInstrument(instrument);
-    }
-  };
-
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#f5f5f5' }}>
       <AppBar 
@@ -157,33 +152,36 @@ const MarketCalendarPage = () => {
             >
               ← Home
             </Button>
+            
+            <Button
+              component={RouterLink}
+              to="/export-demo"
+              color="inherit"
+              size="small"
+              variant="outlined"
+              sx={{ 
+                ml: 1,
+                borderColor: 'rgba(255, 255, 255, 0.3)',
+                '&:hover': {
+                  borderColor: 'white',
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                },
+              }}
+            >
+              📤 Export Demo
+            </Button>
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            {/* Instrument Selector */}
-            <FormControl size="small" sx={{ minWidth: 200 }}>
-              <InputLabel sx={{ color: 'white' }}>Instrument</InputLabel>
-              <Select
-                value={selectedInstrument?.id || ''}
-                onChange={handleInstrumentChange}
-                label="Instrument"
-                sx={{ 
-                  color: 'white',
-                  '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'rgba(255, 255, 255, 0.3)',
-                  },
-                  '& .MuiSvgIcon-root': {
-                    color: 'white',
-                  },
-                }}
-              >
-                {INSTRUMENTS.map((instrument) => (
-                  <MenuItem key={instrument.id} value={instrument.id}>
-                    {instrument.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            {/* Enhanced Instrument Selector */}
+            <EnhancedInstrumentSelector
+              instruments={INSTRUMENTS}
+              selectedInstrument={selectedInstrument}
+              onInstrumentChange={setSelectedInstrument}
+              variant="outlined"
+              size="small"
+              fullWidth
+            />
 
             {/* Data Source Toggle */}
             <FormControlLabel
@@ -238,6 +236,14 @@ const MarketCalendarPage = () => {
               🔄 Debug
             </Button>
 
+            {/* Export Button */}
+            <ExportButton 
+              calendarElement={document.querySelector('.calendar-container')}
+              calendarData={[]} // Will be populated when calendar renders
+              variant="button"
+              size="small"
+            />
+
             {/* Settings Menu */}
             <Tooltip title="Settings">
               <IconButton
@@ -279,7 +285,7 @@ const MarketCalendarPage = () => {
             Market Seasonality Explorer
           </Typography>
           <Typography variant="subtitle1" color="text.secondary">
-            {currentDate.format('MMMM YYYY')} • {selectedInstrument?.name} • {useRealData ? 'Live CoinGecko Data' : 'Demo Data'}
+            {currentDate.format('MMMM YYYY')} • {selectedInstrument?.name} • {useRealData ? 'Live Enhanced Data' : 'Demo Data'}
           </Typography>
           
           {/* Data Source Status Alert */}
@@ -288,42 +294,89 @@ const MarketCalendarPage = () => {
             sx={{ mt: 2, mb: 2 }}
           >
             <Typography variant="body2">
-              <strong>Data Source:</strong> {useRealData ? 'CoinGecko API (Real Market Data)' : 'Demo Data (Static Values)'}
+              <strong>Data Source:</strong> {useRealData ? 'Enhanced API (Multi-Asset Real Market Data)' : 'Demo Data (Static Values)'}
               {useRealData && (
                 <Typography variant="caption" sx={{ display: 'block', mt: 0.5 }}>
-                  📊 Fetching live cryptocurrency data from CoinGecko API
+                  📊 Fetching live data for crypto, stocks, forex, commodities, and indices
                 </Typography>
               )}
             </Typography>
           </Alert>
         </Box>
 
-        <Grid container spacing={3}>
-          {/* Left Column - Controls */}
-          <Grid item xs={12} lg={3}>
-            {/* Keyboard Navigation Help */}
-            <Paper elevation={1} sx={{ p: 2, mt: 2 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <Keyboard sx={{ mr: 1, color: 'primary.main' }} />
-                <Typography variant="subtitle2">Keyboard Navigation</Typography>
-              </Box>
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                Arrow Keys: Navigate dates
-              </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                Enter: Open dashboard
-              </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                Escape: Reset selection
-              </Typography>
-            </Paper>
-          </Grid>
+        {/* Main Content Tabs */}
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+          <Tabs 
+            value={currentTab} 
+            onChange={(event, newValue) => setCurrentTab(newValue)}
+            aria-label="main content tabs"
+          >
+            <Tab 
+              icon={<CalendarToday />} 
+              label="Market Calendar" 
+              id="tab-0" 
+              aria-controls="tabpanel-0" 
+            />
+            <Tab 
+              icon={<Speed />} 
+              label="Real-Time Data" 
+              id="tab-1" 
+              aria-controls="tabpanel-1" 
+            />
+            <Tab 
+              icon={<CheckCircle />} 
+              label="Implementation Summary" 
+              id="tab-2" 
+              aria-controls="tabpanel-2" 
+            />
+          </Tabs>
+        </Box>
 
-          {/* Right Column - Calendar */}
-          <Grid item xs={12} lg={9}>
-            <Calendar onDaySelect={handleDaySelect} />
+        {/* Tab Content */}
+        {currentTab === 0 && (
+          <Grid container spacing={3}>
+            {/* Left Column - Controls */}
+            <Grid item xs={12} lg={3}>
+              {/* Keyboard Navigation Help */}
+              <Paper elevation={1} sx={{ p: 2, mt: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <Keyboard sx={{ mr: 1, color: 'primary.main' }} />
+                  <Typography variant="subtitle2">Keyboard Navigation</Typography>
+                </Box>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                  Arrow Keys: Navigate dates
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                  Enter: Open dashboard
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                  Escape: Reset selection
+                </Typography>
+              </Paper>
+            </Grid>
+
+            {/* Right Column - Calendar */}
+            <Grid item xs={12} lg={9}>
+              <Calendar onDaySelect={handleDaySelect} />
+            </Grid>
           </Grid>
-        </Grid>
+        )}
+
+        {/* Real-Time Data Tab */}
+        {currentTab === 1 && (
+          <RealTimeDataDashboard 
+            selectedInstrument={selectedInstrument}
+            onToggleRealTime={(enabled) => {
+              setUseRealData(enabled);
+              marketDataService.toggleDataSource(enabled);
+            }}
+          />
+        )}
+
+        {/* Implementation Summary Tab */}
+        {currentTab === 2 && (
+          <ImplementationSummary />
+        )}
 
         {/* Dashboard Modal/Drawer */}
         {showDashboard && selectedDate && (
