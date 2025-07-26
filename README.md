@@ -59,7 +59,6 @@ A sophisticated React application featuring an interactive calendar for visualiz
 | **File Downloads** | FileSaver.js | 2.0.5 |
 
 ## 📁 Project Architecture
-## 📁 Project Architecture
 
 ```
 src/

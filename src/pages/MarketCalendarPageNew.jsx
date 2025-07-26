@@ -19,7 +19,16 @@ import {
   Tab,
   useTheme
 } from '@mui/material';
-import { Settings, Api, Storage, Keyboard, Speed, CalendarToday, CheckCircle } from '@mui/icons-material';
+import { 
+  Settings, 
+  Api, 
+  Storage, 
+  Keyboard, 
+  Speed, 
+  CalendarToday, 
+  CheckCircle, 
+  CompareArrows 
+} from '@mui/icons-material';
 import { Link as RouterLink } from 'react-router-dom';
 import { AppContext } from '../context/AppContext';
 import { ThemeSelector } from '../context/ThemeContext.jsx';
@@ -29,6 +38,7 @@ import RealTimeDataDashboard from '../components/RealTimeDataDashboard';
 import EnhancedInstrumentSelector from '../components/EnhancedInstrumentSelector';
 import ImplementationSummary from '../components/ImplementationSummary';
 import ExportButton from '../components/ExportButton';
+import DataComparison from '../components/DataComparison';
 import marketDataService from '../services/marketDataService';
 
 const MarketCalendarPage = () => {
@@ -40,6 +50,7 @@ const MarketCalendarPage = () => {
   const [selectedDateData, setSelectedDateData] = useState(null);
   const [settingsAnchorEl, setSettingsAnchorEl] = useState(null);
   const [currentTab, setCurrentTab] = useState(0); // 0 = Calendar, 1 = Real-time Data, 2 = Implementation Summary
+  const [comparisonDialogOpen, setComparisonDialogOpen] = useState(false);
   
   // Filter states (currently unused but reserved for future features)
   // eslint-disable-next-line no-unused-vars
@@ -195,6 +206,25 @@ const MarketCalendarPage = () => {
               }}
             >
               🎨 Themes
+            </Button>
+
+            <Button
+              onClick={() => setComparisonDialogOpen(true)}
+              color="inherit"
+              size="small"
+              variant="outlined"
+              startIcon={<CompareArrows />}
+              sx={{ 
+                ml: 1,
+                borderColor: 'rgba(255, 255, 255, 0.3)',
+                color: theme.palette.primary.contrastText,
+                '&:hover': {
+                  borderColor: 'white',
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                },
+              }}
+            >
+              Compare Periods
             </Button>
           </Box>
 
@@ -451,6 +481,12 @@ const MarketCalendarPage = () => {
             dateRange={dateRange}
           />
         )}
+
+        {/* Data Comparison Dialog */}
+        <DataComparison
+          open={comparisonDialogOpen}
+          onClose={() => setComparisonDialogOpen(false)}
+        />
       </Container>
     </Box>
   );
