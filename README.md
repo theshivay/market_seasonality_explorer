@@ -1,141 +1,115 @@
-# Market Seasonality Explorer
+# 📊 Market Seasonality Explorer
 
-A React application that displays an interactive calendar for visualizing historical volatility, liquidity, and performance data across different time periods (day/week/month) for financial instruments.
+A sophisticated React application featuring an interactive calendar for visualizing market data, comprehensive theming system, and powerful export capabilities. Built with modern React, Material-UI, and enhanced with real-time data integration.
 
-![Market Seasonality Explorer](https://img.shields.io/badge/React-18+-blue) ![Material-UI](https://img.shields.io/badge/Material--UI-Latest-blue) ![License](https://img.shields.io/badge/License-MIT-green)
+![React](https://img.shields.io/badge/React-19.1.0-blue?style=for-the-badge&logo=react) ![Material-UI](https://img.shields.io/badge/Material--UI-7.2.0-blue?style=for-the-badge&logo=mui) ![Vite](https://img.shields.io/badge/Vite-7.0.4-646CFF?style=for-the-badge&logo=vite) ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
-## 🚀 Features Implemented
+## ✨ Key Features
 
-### 1. Interactive Calendar Component ✅
-- ✅ **Custom calendar component** with daily, weekly, and monthly views
-- ✅ **Smooth transitions** between different time periods
-- ✅ **Navigation** between different months/years with intuitive controls
-- ✅ **Today's date highlighting** with visual indicators
-- ✅ **Keyboard navigation** support:
-  - Arrow keys for date navigation
-  - Enter to open detailed view
-  - Escape to reset selection
-  - Home/End for month boundaries
+### 🗓️ **Interactive Calendar System**
+- **Multi-view Calendar**: Daily, weekly, and monthly views with smooth transitions
+- **Theme-aware Design**: Adaptive colors and styling across all themes
+- **Keyboard Navigation**: Full arrow key support, Enter/Escape shortcuts
+- **Date Range Selection**: Advanced date picking with analysis capabilities
+- **Volatility Heatmap**: Color-coded cells showing market volatility levels
+- **Responsive Design**: Mobile-first approach with touch-friendly interactions
 
-### 2. Data Visualization Layers ✅
-- ✅ **Volatility Heatmap**: Color-coded calendar cells
-  - Green shades for low volatility (< 5%)
-  - Yellow/Orange shades for medium volatility (5-15%)
-  - Red shades for high volatility (> 15%)
-- ✅ **Liquidity Indicators**: Visual patterns and metrics
-  - Dots pattern for high liquidity
-  - Stripes pattern for medium liquidity
-  - Gradient pattern for low liquidity
-- ✅ **Performance Metrics**: Price change visualization
-  - Upward arrows for positive performance (> 2%)
-  - Downward arrows for negative performance (< -2%)
-  - Neutral indicators for minimal changes
+### 🎨 **Comprehensive Theming System**
+- **5 Built-in Themes**: Default, Dark, Colorblind-friendly, High Contrast, Corporate
+- **Dynamic Theme Switching**: Real-time theme changes across all components
+- **Accessibility Compliance**: WCAG-compliant color schemes and contrast ratios
+- **Custom Theme Provider**: Centralized theme management with persistence
+- **Theme Demo Page**: Interactive showcase of all available themes
 
-### 3. Multi-Timeframe Support ✅
-- ✅ **Daily View**: Detailed metrics per day
-  - Intraday price ranges
-  - Trading volume and liquidity
-  - Price change percentages
-- ✅ **Weekly View**: Aggregated weekly summaries
-  - Weekly average volatility
-  - Total weekly volume
-  - Weekly performance summary
-- ✅ **Monthly View**: Monthly overview
-  - Monthly volatility trends
-  - Monthly liquidity patterns
-  - Monthly performance highlights
+### 📤 **Advanced Export Functionality**
+- **PDF Export**: High-quality calendar exports with full formatting
+- **CSV Export**: Structured data export for analysis
+- **Image Export**: PNG/JPEG calendar snapshots
+- **Export Demo Page**: Comprehensive testing and preview capabilities
+- **Multi-format Support**: Various export options for different use cases
 
-### 4. Interactive Features ✅
-- ✅ **Hover Effects**: Detailed tooltips with metrics
-- ✅ **Click Interactions**: Date selection for detailed breakdowns
-- ✅ **Selection Mode**: Date range selection for custom analysis
-- ✅ **Filter Controls**: Multiple filter options
-  - Financial instrument selection
-  - Time period filters
-  - Metric type toggles
-  - Visualization layer controls
-- ✅ **Zoom Functionality**: Scale calendar for detailed analysis
+### 📊 **Real-time Data Integration**
+- **Live Market Data**: Real-time cryptocurrency prices and volumes
+- **WebSocket Connections**: Live orderbook and ticker data
+- **Multi-asset Support**: Crypto, stocks, forex, commodities, indices
+- **Enhanced Instrument Selector**: Categorized asset selection with icons
+- **Data Source Toggle**: Switch between live and demo data
 
-### 5. Data Dashboard Panel ✅
-- ✅ **Comprehensive side panel** with detailed information
-- ✅ **Multiple tabs** for different data views:
-  - Overview with key metrics
-  - Price charts and analysis
-  - Volatility calculations
-  - Volume and liquidity data
-  - **Technical indicators** (NEW)
-  - **Benchmark comparison** (NEW)
-- ✅ **Interactive charts** using Recharts library
-- ✅ **Export capabilities** for data analysis
+### 📈 **Advanced Dashboard & Analytics**
+- **Interactive Dashboard**: Comprehensive market data visualization
+- **Technical Indicators**: VIX-like volatility, moving averages, RSI
+- **Chart Integration**: Recharts-powered interactive visualizations
+- **Benchmark Comparison**: Performance analysis against market indices
+- **Risk Metrics**: Volatility analysis and risk assessment tools
 
-### 6. Advanced Analytics Features ✅ (NEW)
-- ✅ **VIX-like Volatility Index**: Market fear gauge calculation
-- ✅ **Moving Averages**: SMA 5, 10, 20, 50 with visual charts
-- ✅ **Technical Indicators**: 
-  - RSI (Relative Strength Index)
-  - Simple Moving Averages with crossover signals
-  - Price vs moving average analysis
-- ✅ **Benchmark Comparison**:
-  - Alpha (excess return) calculation
-  - Beta coefficient analysis
-  - Performance vs market benchmark
-  - Risk metrics (Sharpe ratio, Max drawdown, VaR)
-- ✅ **Advanced Volatility Metrics**:
-  - Annualized volatility
-  - Historical volatility analysis
-  - Fear & Greed index integration
+## 🛠️ Technology Stack
 
-## 🛠 Tech Stack
+| Category | Technology | Version |
+|----------|------------|---------|
+| **Frontend** | React | 19.1.0 |
+| **UI Framework** | Material-UI (MUI) | 7.2.0 |
+| **Build Tool** | Vite | 7.0.4 |
+| **Routing** | React Router DOM | 7.7.0 |
+| **Charts** | Recharts | 3.1.0 |
+| **Styling** | Tailwind CSS + MUI System | 3.4.17 |
+| **Date Handling** | Moment.js | 2.30.1 |
+| **PDF Export** | jsPDF | 3.0.1 |
+| **Image Export** | html2canvas | 1.4.1 |
+| **CSV Export** | PapaParse | 5.5.3 |
+| **File Downloads** | FileSaver.js | 2.0.5 |
 
-- **Frontend Framework**: React 19.1.0
-- **UI Library**: Material-UI (MUI) 7.2.0
-- **Charts**: Recharts 3.1.0
-- **Styling**: Tailwind CSS 3.4.17 + MUI System
-- **Date Handling**: Moment.js 2.30.1
-- **Routing**: React Router DOM 7.7.0
-- **API Integration**: OKX API (free tier)
-- **Build Tool**: Vite 7.0.4
-
-## 🏗 Project Structure
+## 📁 Project Architecture
+## 📁 Project Architecture
 
 ```
 src/
 ├── components/
 │   ├── Calendar/
-│   │   ├── Calendar.jsx              # Main calendar component
-│   │   ├── CalendarCell.jsx          # Individual date cells with visualizations
-│   │   ├── CalendarHeader.jsx        # Calendar header with weekdays
-│   │   └── DateRangeSelector.jsx     # Date range selection component
+│   │   ├── Calendar.jsx                    # Main interactive calendar component
+│   │   ├── CalendarCell.jsx               # Theme-aware calendar cells with data visualization
+│   │   ├── CalendarHeader.jsx             # Calendar header with weekday labels
+│   │   ├── DateRangeSelector.jsx          # Advanced date range selection with analysis
+│   │   └── WeeklyCalendarCell.jsx         # Specialized cells for weekly view
 │   ├── Dashboard/
-│   │   └── Dashboard.jsx             # Detailed data dashboard
-│   └── FilterControls.jsx            # Filter and control panel
-├── pages/
-│   └── MarketCalendarPageNew.jsx     # Main application page
+│   │   └── DashboardSimple.jsx            # Comprehensive data dashboard with charts
+│   ├── EnhancedInstrumentSelector.jsx     # Multi-asset instrument picker with categories
+│   ├── ExportButton.jsx                   # Export functionality trigger
+│   ├── ExportMenu.jsx                     # Export options menu
+│   ├── ImplementationSummary.jsx          # Project features overview
+│   └── RealTimeDataDashboard.jsx          # Live market data visualization
 ├── context/
-│   ├── AppContext.jsx                # Application state context
-│   └── AppContextProvider.jsx        # Context provider
-├── services/
-│   ├── apiService.jsx                # API integration services
-│   └── marketDataService.jsx         # Market data processing
+│   ├── AppContext.jsx                     # Main application state context
+│   ├── AppContextProvider.jsx            # App state provider with data management
+│   ├── ThemeContext.jsx                  # Theme management with 5 built-in themes
+│   └── ThemeContextBase.js               # Base theme context definition
 ├── hooks/
-│   └── useMarketData.jsx            # Custom hook for data fetching
+│   ├── useCustomTheme.js                 # Custom theme hook for components
+│   └── useMarketData.jsx                 # Market data fetching and management
+├── pages/
+│   ├── ExportDemo.jsx                    # Export functionality demonstration
+│   ├── MarketCalendarPageNew.jsx         # Main application page with navigation
+│   └── ThemeDemo.jsx                     # Interactive theme showcase
+├── services/
+│   ├── apiService.jsx                    # API integration layer
+│   ├── exportService.js                 # Export functionality (PDF, CSV, Image)
+│   └── marketDataService.jsx            # Market data processing and WebSocket
 ├── utils/
-│   ├── constants.js                  # Application constants
-│   ├── dateUtils.jsx                # Date utility functions
-│   ├── dateRangeUtils.js            # Date range utilities
-│   ├── errorHandling.js             # Error handling utilities
-│   ├── performance.js               # Performance optimization utils
-│   └── technicalIndicators.js       # Technical analysis calculations (NEW)
-└── theme.js                         # Material-UI theme configuration
+│   ├── constants.js                      # Application constants and configurations
+│   ├── dateUtils.jsx                    # Date manipulation utilities
+│   └── technicalIndicators.js           # Financial calculations and indicators
+├── App.jsx                               # Root component with theme integration
+├── main.jsx                              # Application entry point
+├── index.css                             # Global styles
+└── theme.js                              # Material-UI theme definitions (5 themes)
 ```
 
-## 🚀 Getting Started
+## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 16+ 
-- npm or yarn
+- **Node.js** 16+ (LTS recommended)
+- **npm** or **yarn** package manager
 
-### Installation
+### Installation & Setup
 
 1. **Clone the repository**
    ```bash
@@ -146,58 +120,58 @@ src/
 2. **Install dependencies**
    ```bash
    npm install
+   # or
+   yarn install
    ```
 
-3. **Set up environment variables** (optional for demo)
+3. **Start development server**
    ```bash
-   # Create .env file for OKX API (optional)
-   VITE_OKX_KEY=your_okx_api_key
-   VITE_OKX_SECRET_KEY=your_okx_secret_key
+   npm run dev
+   # or
+   yarn dev
    ```
 
-4. **Start development server**
-   ```bash
-   npm start
-   ```
+4. **Open application**
+   Navigate to `http://localhost:5173` in your browser
 
-5. **Open your browser**
-   Navigate to `http://localhost:5173`
+### 📋 Available Scripts
 
-### Available Scripts
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server with hot reload |
+| `npm run build` | Build optimized production version |
+| `npm run preview` | Preview production build locally |
+| `npm run lint` | Run ESLint for code quality checks |
 
-- `npm start` - Start development server
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build
-- `npm run lint` - Run ESLint
+## 🎯 Core Features Deep Dive
 
-## 🎯 Key Features Demonstration
+### 🗓️ Calendar System
+- **Multi-view Support**: Seamlessly switch between daily, weekly, and monthly views
+- **Interactive Navigation**: Click, keyboard, and touch navigation support
+- **Data Visualization**: Color-coded cells representing volatility, volume, and performance
+- **Date Range Selection**: Advanced range picking with statistical analysis
+- **Theme Integration**: Consistent styling across all 5 available themes
 
-### Interactive Calendar
-- Navigate between months using arrow buttons or keyboard
-- Click on any date to view detailed market data
-- Use keyboard shortcuts for quick navigation
-- Zoom in/out for better viewing experience
+### 🎨 Theming System
+- **Default Theme**: Clean, professional blue and white design
+- **Dark Theme**: Modern dark interface with blue accents
+- **Colorblind Theme**: Accessible colors optimized for color vision deficiencies
+- **High Contrast Theme**: Maximum contrast for accessibility compliance
+- **Corporate Theme**: Professional gray and blue corporate styling
 
-### Data Visualization
-- **Volatility Heatmap**: Each calendar cell is color-coded based on volatility levels
-- **Volume Bars**: Bottom bars in cells show trading volume
-- **Performance Indicators**: Arrows indicate positive/negative performance
-- **Liquidity Patterns**: Background patterns show liquidity levels
+### 📤 Export Capabilities
+- **PDF Export**: Vector-quality calendar exports with preserved formatting
+- **CSV Export**: Structured data in comma-separated format for analysis
+- **Image Export**: High-resolution PNG/JPEG captures
+- **Batch Export**: Multiple format exports with single click
+- **Custom Formatting**: Configurable export options and layouts
 
-### Filter Controls
-- Switch between different financial instruments (BTC, ETH, ADA, etc.)
-- Toggle between daily, weekly, and monthly views
-- Enable/disable different visualization layers
-- Filter by specific metric types
-
-### Date Range Analysis
-- Select custom date ranges for analysis
-- Compare performance across different periods
-- Export data for external analysis
-
-### Dashboard Analytics
-- Comprehensive metrics for selected dates
-- Interactive charts and visualizations
+### 📊 Data & Analytics
+- **Real-time Integration**: Live cryptocurrency market data via WebSocket
+- **Multi-asset Support**: Cryptocurrencies, stocks, forex, commodities, indices
+- **Technical Analysis**: RSI, moving averages, volatility calculations
+- **Interactive Charts**: Recharts-powered visualizations with zoom and pan
+- **Performance Metrics**: Comprehensive financial analysis tools
 - Technical indicators and comparisons
 - Historical trend analysis
 
@@ -223,136 +197,251 @@ The application now features **Enhanced Multi-Asset API Integration** supporting
 - **WebSocket Monitoring** - Connection status and health indicators
 - **Multi-Exchange Support** - Binance, Coinbase Pro, OKX WebSocket feeds
 
-*Note: Real-time data is currently available for cryptocurrencies. Traditional instruments show demo data and can be easily connected to paid APIs.*
+## 🌐 API & Data Integration
 
-## 📱 Responsive Design
+### Real-time Market Data
+- **Primary Source**: CoinGecko API for cryptocurrency market data
+- **WebSocket Feeds**: Live price tickers and orderbook data
+- **Multi-Exchange Support**: Binance, Coinbase Pro, OKX integration
+- **Data Coverage**: Real-time prices, 24h changes, trading volumes
+- **Historical Data**: Up to 2 years of daily market data
 
-- **Mobile-first approach** with responsive breakpoints
-- **Touch-friendly interactions** for mobile devices
-- **Adaptive layouts** for different screen sizes
-- **Optimized performance** for various devices
+### Supported Assets
+| Category | Examples | Data Source |
+|----------|----------|-------------|
+| **Cryptocurrencies** | BTC, ETH, SOL, ADA, DOT, XRP | Live API |
+| **Stocks** | AAPL, GOOGL, MSFT, TSLA, AMZN | Demo Data* |
+| **Forex** | EUR/USD, GBP/USD, USD/JPY | Demo Data* |
+| **Commodities** | Gold, Silver, Oil, Natural Gas | Demo Data* |
+| **Indices** | S&P 500, NASDAQ, Dow Jones, VIX | Demo Data* |
 
-## 🎨 Design System
+*\*Traditional assets show demo data - easily configurable for live API integration*
 
-- **Material Design 3** principles
-- **Consistent color scheme** with theme support
-- **Accessibility features** including keyboard navigation
-- **Smooth animations** and transitions
-- **Professional UI/UX** patterns
+### Data Features
+- **Live Updates**: Real-time price monitoring with WebSocket connections
+- **Market Depth**: Live orderbook data with bid/ask spreads
+- **Historical Analysis**: Volatility calculations and trend analysis
+- **Performance Metrics**: Returns, moving averages, technical indicators
 
-## 🔧 Customization
+## 📱 User Interface & Experience
 
-The application is highly customizable:
-- **Theme configuration** in `src/theme.js`
-- **API endpoints** in `src/utils/constants.js`
-- **Visualization colors** in component styles
-- **Data sources** can be easily switched
+### Responsive Design
+- **Mobile-First**: Optimized for mobile devices with touch interactions
+- **Progressive Enhancement**: Enhanced features on larger screens
+- **Cross-Platform**: Works seamlessly on iOS, Android, and desktop
+- **Touch-Friendly**: Large touch targets and gesture support
 
-## 📊 Performance Optimizations
+### Accessibility Features
+- **WCAG Compliance**: Meets accessibility guidelines
+- **Keyboard Navigation**: Full keyboard support throughout the application
+- **Screen Reader Support**: Proper ARIA labels and semantic HTML
+- **High Contrast Options**: Multiple theme options for visual accessibility
+- **Color-Blind Friendly**: Specialized theme for color vision deficiencies
 
-- **React.memo** for component optimization
-- **Lazy loading** for large datasets
-- **Debounced API calls** to reduce requests
-- **Efficient re-rendering** with proper state management
+### Performance Optimization
+- **React 19**: Latest React features for optimal performance
+- **Code Splitting**: Lazy loading for improved load times
+- **Memoization**: Optimized re-rendering with React.memo
+- **Efficient State Management**: Context-based state with minimal re-renders
 
-## 🐛 Known Issues & Future Enhancements
+## �️ Development & Customization
 
-### ✅ Recently Implemented
-- **Multi-Asset Support** - Cryptocurrencies, stocks, forex, commodities, and indices
-- **Real-time WebSocket Integration** - Live orderbook and ticker data
-- **Enhanced API Service** - Unified data layer for multiple asset types
-- **Real-time Dashboard** - Live price monitoring and market depth visualization
+### Theme Customization
+Themes are defined in `src/theme.js` with complete Material-UI integration:
 
-### Current Limitations
-- Real-time data limited to cryptocurrencies (traditional assets show demo data)
-- Some APIs require paid subscriptions for full historical data
-- WebSocket connections limited to major exchanges
+```javascript
+// Example theme structure
+const customTheme = {
+  palette: {
+    mode: 'light', // or 'dark'
+    primary: { main: '#1976d2' },
+    secondary: { main: '#dc004e' },
+    background: { default: '#f5f5f5' },
+    custom: {
+      calendar: {
+        cellBackground: '#ffffff',
+        volatilityHigh: '#f44336',
+        volatilityLow: '#4caf50'
+      }
+    }
+  }
+}
+```
 
-### Future Enhancements
-- **Advanced Technical Analysis** - More technical indicators and charting tools
-- **Data Export Features** - CSV, JSON, and PDF export capabilities
-- **Portfolio Tracking** - Multi-asset portfolio management
-- **Advanced Charting** - Candlestick charts, drawing tools, and advanced visualizations
-- **News Integration** - Market news and sentiment analysis
-- **Mobile App** - React Native companion app
+### Export Configuration
+Export settings can be customized in `src/services/exportService.js`:
 
-## 📄 License
+```javascript
+// PDF export options
+const pdfOptions = {
+  format: 'a4',
+  margin: 10,
+  filename: 'calendar-export.pdf'
+}
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+// CSV export columns
+const csvColumns = ['date', 'volatility', 'volume', 'performance']
+```
+
+### API Integration
+Add new data sources in `src/services/apiService.jsx`:
+
+```javascript
+// Example new API integration
+export const fetchCustomData = async (symbol) => {
+  const response = await fetch(`/api/custom/${symbol}`)
+  return response.json()
+}
+```
+
+## 🔧 Configuration & Environment
+
+### Environment Variables
+Create a `.env` file in the root directory:
+
+```bash
+# Optional API keys for enhanced data
+VITE_COINGECKO_API_KEY=your_api_key_here
+VITE_ALPHA_VANTAGE_KEY=your_alpha_vantage_key
+VITE_POLYGON_API_KEY=your_polygon_key
+
+# WebSocket configuration
+VITE_ENABLE_WEBSOCKET=true
+VITE_WS_RECONNECT_INTERVAL=5000
+```
+
+### Build Configuration
+The project uses Vite with optimized settings in `vite.config.js`:
+
+```javascript
+export default defineConfig({
+  plugins: [react()],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'mui': ['@mui/material', '@mui/icons-material'],
+          'charts': ['recharts'],
+          'vendor': ['react', 'react-dom', 'react-router-dom']
+        }
+      }
+    }
+  }
+})
+```
+
+## 🚀 Deployment
+
+### Production Build
+```bash
+# Create optimized production build
+npm run build
+
+# Preview production build locally
+npm run preview
+```
+
+### Deployment Options
+- **Vercel**: Automatic deployment with GitHub integration
+- **Netlify**: Static site hosting with form handling
+- **AWS S3**: Static website hosting with CloudFront CDN
+- **GitHub Pages**: Free hosting for open source projects
+
+## 🔍 Testing & Quality Assurance
+
+### Code Quality
+- **ESLint**: Configured with React and accessibility rules
+- **Prettier**: Code formatting for consistent style
+- **PropTypes**: Runtime type checking for React components
+
+### Performance Monitoring
+- **React DevTools**: Component profiling and debugging
+- **Lighthouse**: Performance, accessibility, and SEO auditing
+- **Bundle Analysis**: Webpack bundle analyzer for size optimization
+
+## 📈 Roadmap & Future Enhancements
+
+### Planned Features
+- [ ] **Advanced Charting**: Candlestick charts with drawing tools
+- [ ] **Portfolio Management**: Multi-asset portfolio tracking
+- [ ] **Alert System**: Price and volatility alerts
+- [ ] **News Integration**: Market news and sentiment analysis
+- [ ] **Mobile App**: React Native companion application
+- [ ] **API Rate Limiting**: Smart caching and request optimization
+- [ ] **Data Export Enhancements**: Excel format and scheduled exports
+- [ ] **Advanced Analytics**: Machine learning price predictions
+
+### Integration Roadmap
+- [ ] **Bloomberg API**: Professional market data integration
+- [ ] **Alpha Vantage**: Stock market data enhancement
+- [ ] **Polygon.io**: Real-time equity and crypto data
+- [ ] **News APIs**: Financial news aggregation
+- [ ] **Social Sentiment**: Twitter and Reddit sentiment analysis
+
+## 📄 License & Legal
+
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+
+### Third-Party Licenses
+- React: MIT License
+- Material-UI: MIT License
+- Recharts: MIT License
+- All other dependencies retain their respective licenses
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+We welcome contributions! Please follow these guidelines:
 
-## 👥 Author
+### Contributing Process
+1. **Fork** the repository
+2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
+3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
+4. **Push** to the branch (`git push origin feature/amazing-feature`)
+5. **Open** a Pull Request
 
-**Shivam Mishra** - [GitHub Profile](https://github.com/theshivay)
+### Development Guidelines
+- Follow existing code style and conventions
+- Add tests for new features
+- Update documentation for API changes
+- Ensure accessibility compliance
+- Test across different themes and screen sizes
 
-## 🙏 Acknowledgments
+### Bug Reports
+Please use the GitHub issue tracker to report bugs. Include:
+- Browser and version
+- Steps to reproduce
+- Expected vs actual behavior
+- Screenshots if applicable
 
-- **OKX API** for providing free cryptocurrency market data
-- **Material-UI** team for the excellent component library
-- **Recharts** for powerful charting capabilities
-- **React** community for the amazing ecosystem
+## 👥 Authors & Acknowledgments
 
-## Getting Started
+### Main Developer
+**Shivam Mishra** - *Full Stack Developer*
+- GitHub: [@theshivay](https://github.com/theshivay)
+- Project: [Market Seasonality Explorer](https://github.com/theshivay/market_seasonality_explorer)
 
-### Prerequisites
+### Acknowledgments
+- **Material-UI Team** - Excellent React component library
+- **Recharts Community** - Powerful charting capabilities
+- **CoinGecko** - Reliable cryptocurrency market data API
+- **React Community** - Outstanding ecosystem and support
+- **Vite Team** - Lightning-fast build tool
 
-- Node.js (v14 or higher)
-- npm or yarn
+### Special Thanks
+- Open source contributors who make projects like this possible
+- The financial technology community for inspiration and best practices
+- Beta testers and early users for valuable feedback
 
-### Installation
+---
 
-1. Clone this repository
-2. Install dependencies:
-   ```bash
-   npm install
-   # or
-   yarn
-   ```
-3. Start development server:
-   ```bash
-   npm run dev
-   # or
-   yarn dev
-   ```
-4. Open your browser to `http://localhost:5173`
+## 📞 Support & Contact
 
-## Project Structure
+For questions, suggestions, or support:
 
-```
-src/
-  ├── assets/         # Static assets
-  ├── components/     # React components
-  │   ├── Calendar/   # Calendar-related components
-  │   └── Dashboard/  # Dashboard components
-  ├── context/        # React context for state management
-  ├── hooks/          # Custom React hooks
-  ├── pages/          # Page components
-  ├── services/       # API/data services
-  └── utils/          # Utility functions
-```
+- **GitHub Issues**: [Report bugs or request features](https://github.com/theshivay/market_seasonality_explorer/issues)
+- **Documentation**: Check this README and inline code comments
+- **Community**: Join discussions in GitHub Discussions
 
-## Key Components
+---
 
-### Calendar
-The calendar component provides different views (day/week/month) for visualizing market data with color-coded cells representing various metrics.
-
-### Dashboard
-The dashboard displays detailed information for selected dates, including price charts, volume analysis, volatility metrics, and technical indicators.
-
-### AppContext
-Manages global state for the application, handling date navigation, view modes, and instrument selection.
-
-## Data Services
-
-Currently, the application uses mock data generated in the `marketDataService.jsx` file. In a production environment, this would be connected to real market data APIs.
-
-## License
-
-MIT
+*Built with ❤️ using React, Material-UI, and modern web technologies*
