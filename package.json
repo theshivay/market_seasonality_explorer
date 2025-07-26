@@ -1,7 +1,8 @@
 {
-  "name": "goquant_assignment",
+  "name": "market-seasonality-explorer",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "A React application that displays an interactive calendar for visualizing historical volatility, liquidity, and performance data across different time periods for financial instruments.",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -15,25 +16,25 @@
     "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^7.2.0",
     "@mui/material": "^7.2.0",
+    "autoprefixer": "^10.4.21",
     "moment": "^2.30.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.7.0",
-    "recharts": "^3.1.0"
+    "recharts": "^3.1.0",
+    "tailwindcss": "^3.4.17"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.1",
-    "@tailwindcss/postcss": "^4.1.11",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.6.0",
-    "autoprefixer": "^10.4.21",
     "eslint": "^9.30.1",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^16.3.0",
     "postcss": "^8.5.6",
-    "tailwindcss": "^4.1.11",
+    "prop-types": "^15.8.1",
     "vite": "^7.0.4"
   }
 }

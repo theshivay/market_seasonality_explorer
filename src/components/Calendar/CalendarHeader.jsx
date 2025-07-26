@@ -71,9 +71,45 @@ const CalendarHeader = ({ viewMode = 'month' }) => {
     );
   };
   
+  // Render week header for week view
+  const renderWeekHeader = () => {
+    return (
+      <Box 
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          py: 1.5,
+          px: 2,
+          borderBottom: `1px solid ${theme.palette.divider}`,
+          bgcolor: theme.palette.mode === 'light' 
+            ? theme.palette.grey[50] 
+            : theme.palette.grey[900],
+          gridColumn: '1',
+          width: '100%'
+        }}
+      >
+        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+          Week Period
+        </Typography>
+        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+          Performance
+        </Typography>
+        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+          Volume
+        </Typography>
+        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+          Volatility
+        </Typography>
+      </Box>
+    );
+  };
+  
   return (
     <>
-      {viewMode === 'day' ? renderHourHeaders() : renderDayHeaders()}
+      {viewMode === 'day' && renderHourHeaders()}
+      {viewMode === 'week' && renderWeekHeader()}
+      {viewMode === 'month' && renderDayHeaders()}
     </>
   );
 };

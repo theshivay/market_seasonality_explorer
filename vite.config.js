@@ -15,6 +15,15 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
+      output: {
+        manualChunks: {
+          // Group vendor libraries
+          'mui': ['@mui/material', '@mui/icons-material'],
+          'charts': ['recharts'],
+          'vendor': ['react', 'react-dom', 'react-router-dom'],
+          'utils': ['moment']
+        }
+      },
       onwarn(warning, warn) {
         // Suppress warnings about missing assets
         if (warning.code === 'MISSING_EXPORT' || 

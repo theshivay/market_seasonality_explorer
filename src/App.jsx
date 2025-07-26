@@ -1,8 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { CssBaseline, ThemeProvider, responsiveFontSizes } from '@mui/material'
-import { AppContextProvider } from './context/AppContext'
-import MarketCalendarPage from './pages/MarketCalendarPage'
-import DataValidator from './components/DataValidation/DataValidator'
+import { AppContextProvider } from './context/AppContextProvider'
+import MarketCalendarPageNew from './pages/MarketCalendarPageNew'
 import theme from './theme'
 
 // Create responsive theme with automatic font scaling
@@ -16,8 +15,7 @@ function App() {
         <Router>
           <div className="min-h-screen w-full bg-gray-100 dark:bg-gray-900 flex flex-col">
             <Routes>
-              <Route path="/" element={<MarketCalendarPage />} />
-              <Route path="/validate-data" element={<DataValidator />} />
+              <Route path="/" element={<MarketCalendarPageNew />} />
             </Routes>
           </div>
         </Router>
