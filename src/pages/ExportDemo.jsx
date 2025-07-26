@@ -24,7 +24,7 @@ import {
   CheckCircle,
   GetApp,
   Code,
-  Features
+  Settings
 } from '@mui/icons-material';
 import { Link as RouterLink } from 'react-router-dom';
 import ExportButton from '../components/ExportButton';
@@ -431,7 +431,7 @@ const ExportDemo = () => {
               </ListItem>
               <ListItem>
                 <ListItemIcon>
-                  <Features />
+                  <Settings />
                 </ListItemIcon>
                 <ListItemText 
                   primary="Browser Support"

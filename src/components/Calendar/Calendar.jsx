@@ -554,6 +554,8 @@ const Calendar = ({ onDaySelect }) => {
                 variant="icon"
                 size={isMobile ? "small" : "medium"}
               />
+              {/* Debug marketData */}
+              {console.log('📊 Calendar marketData for export:', marketData)}
             </Box>
           </Box>
         </Box>

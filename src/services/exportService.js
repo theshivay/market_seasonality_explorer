@@ -147,17 +147,19 @@ class ExportService {
       const csvData = calendarData.map(item => ({
         Date: moment(item.date).format('YYYY-MM-DD'),
         Day: moment(item.date).format('dddd'),
-        'Market Open': item.isMarketOpen ? 'Yes' : 'No',
-        'Volatility': item.volatility || 'N/A',
-        'Volume': item.volume || 'N/A',
-        'Price Change': item.priceChange || 'N/A',
-        'Price Change %': item.priceChangePercent || 'N/A',
-        'High': item.high || 'N/A',
-        'Low': item.low || 'N/A',
-        'Close': item.close || 'N/A',
+        'Market Open': item.isMarketOpen !== undefined ? (item.isMarketOpen ? 'Yes' : 'No') : 'N/A',
+        'Volatility': item.volatility || item.avgVolatility || 'N/A',
+        'Volume': item.volume || item.avgVolume || 'N/A',
+        'Price': item.price || item.currentPrice || item.close || 'N/A',
+        'Price Change': item.priceChange || item.change || 'N/A',
+        'Price Change %': item.priceChangePercent || item.changePercent || 'N/A',
+        'High': item.high || item.dayHigh || 'N/A',
+        'Low': item.low || item.dayLow || 'N/A',
+        'Close': item.close || item.currentPrice || 'N/A',
+        'Open': item.open || 'N/A',
         'Market Events': Array.isArray(item.events) ? item.events.join('; ') : (item.events || 'None'),
-        'Seasonality Score': item.seasonalityScore || 'N/A',
-        'Notes': item.notes || ''
+        'Seasonality Score': item.seasonalityScore || item.score || 'N/A',
+        'Notes': item.notes || item.description || ''
       }));
 
       // Generate CSV
