@@ -27,7 +27,8 @@ import {
   Speed, 
   CalendarToday, 
   CheckCircle, 
-  CompareArrows 
+  CompareArrows,
+  NotificationsActive
 } from '@mui/icons-material';
 import { Link as RouterLink } from 'react-router-dom';
 import { AppContext } from '../context/AppContext';
@@ -39,6 +40,7 @@ import EnhancedInstrumentSelector from '../components/EnhancedInstrumentSelector
 import ImplementationSummary from '../components/ImplementationSummary';
 import ExportButton from '../components/ExportButton';
 import DataComparison from '../components/DataComparison';
+import AlertSystem from '../components/AlertSystem';
 import marketDataService from '../services/marketDataService';
 
 const MarketCalendarPage = () => {
@@ -49,7 +51,7 @@ const MarketCalendarPage = () => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedDateData, setSelectedDateData] = useState(null);
   const [settingsAnchorEl, setSettingsAnchorEl] = useState(null);
-  const [currentTab, setCurrentTab] = useState(0); // 0 = Calendar, 1 = Real-time Data, 2 = Implementation Summary
+  const [currentTab, setCurrentTab] = useState(0); // 0 = Calendar, 1 = Real-time Data, 2 = Implementation Summary, 3 = Alert System
   const [comparisonDialogOpen, setComparisonDialogOpen] = useState(false);
   
   // Filter states (currently unused but reserved for future features)
@@ -410,6 +412,12 @@ const MarketCalendarPage = () => {
               id="tab-2" 
               aria-controls="tabpanel-2" 
             />
+            <Tab 
+              icon={<NotificationsActive />} 
+              label="Alert System" 
+              id="tab-3" 
+              aria-controls="tabpanel-3" 
+            />
           </Tabs>
         </Box>
 
@@ -467,6 +475,11 @@ const MarketCalendarPage = () => {
         {/* Implementation Summary Tab */}
         {currentTab === 2 && (
           <ImplementationSummary />
+        )}
+
+        {/* Alert System Tab */}
+        {currentTab === 3 && (
+          <AlertSystem />
         )}
 
         {/* Dashboard Modal/Drawer */}

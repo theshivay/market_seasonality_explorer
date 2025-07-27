@@ -88,6 +88,12 @@ const API_ENDPOINTS = {
  * Detect asset type from symbol
  */
 export const detectAssetType = (symbol) => {
+  // Add validation for symbol parameter
+  if (!symbol || typeof symbol !== 'string') {
+    console.warn('[detectAssetType] Invalid symbol:', symbol);
+    return ASSET_TYPES.CRYPTO; // Default fallback
+  }
+  
   const upperSymbol = symbol.toUpperCase();
   
   if (SYMBOLS.CRYPTO[upperSymbol]) return ASSET_TYPES.CRYPTO;

@@ -4,6 +4,7 @@ import moment from 'moment';
 import { AppContext } from './AppContext';
 import { VIEW_MODES, KEYBOARD_SHORTCUTS } from '../utils/constants';
 import { getAllInstruments } from '../services/enhancedApiService';
+import theme from '../theme';
 
 // Get all available financial instruments
 const INSTRUMENTS = getAllInstruments();
@@ -190,7 +191,8 @@ export const AppContextProvider = ({ children }) => {
     colorTheme,
     setColorTheme,
     useRealData,
-    setUseRealData
+    setUseRealData,
+    theme // Add theme to context
   };
 
   return (

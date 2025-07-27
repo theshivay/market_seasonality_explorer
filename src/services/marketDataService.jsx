@@ -34,6 +34,14 @@ class MarketDataService {
    */
   async getDailyData(date, instrument) {
     const instrumentId = instrument?.id || instrument?.symbol || instrument;
+    
+    // Validate instrumentId
+    if (!instrumentId || typeof instrumentId !== 'string') {
+      console.warn('[MarketDataService] Invalid instrumentId:', instrumentId, 'using default BTC');
+      const fallbackId = 'BTC';
+      return this.getDailyData(date, { id: fallbackId });
+    }
+    
     const dateStr = moment(date).format('YYYY-MM-DD');
     const currentDate = moment().format('YYYY-MM-DD'); // Today's date for logging
     console.log(`[MarketDataService] getDailyData called for ${instrumentId} on ${dateStr} (Today is ${currentDate})`);
