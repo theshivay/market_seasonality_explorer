@@ -23,7 +23,11 @@ import {
   Select,
   MenuItem,
   useTheme,
-  Alert
+  Alert,
+  Menu,
+  ListItemIcon,
+  ListItemText,
+  CircularProgress
 } from '@mui/material';
 import {
   CompareArrows,
@@ -36,7 +40,11 @@ import {
   BarChart,
   ShowChart,
   Add,
-  Clear
+  Clear,
+  GetApp,
+  PictureAsPdf,
+  Image,
+  TableChart
 } from '@mui/icons-material';
 import {
   ResponsiveContainer,
@@ -49,7 +57,9 @@ import {
   Legend
 } from 'recharts';
 import moment from 'moment';
-import { calculateAllIndicators } from '../utils/technicalIndicators'
+import { calculateAllIndicators } from '../utils/technicalIndicators';
+import exportService from '../services/exportService';
+
 const DataComparison = ({ open, onClose }) => {
   const theme = useTheme();
   // Future integration with AppContext for instrument selection
@@ -65,6 +75,11 @@ const DataComparison = ({ open, onClose }) => {
   });
   const [comparisonData, setComparisonData] = useState([]);
   const [chartType, setChartType] = useState('performance'); // 'performance', 'volatility', 'volume'
+  
+  // Export functionality
+  const [exportAnchorEl, setExportAnchorEl] = useState(null);
+  const [exportLoading, setExportLoading] = useState(false);
+  const [exportSuccess, setExportSuccess] = useState(null);
 
   // Get market data for analysis (for future integration)
   // const marketData = useMarketData(selectedInstrument, useRealData);
@@ -231,6 +246,163 @@ const DataComparison = ({ open, onClose }) => {
     return data;
   };
 
+  // Export functions
+  const handleExportClick = (event) => {
+    setExportAnchorEl(event.currentTarget);
+  };
+
+  const handleExportClose = () => {
+    setExportAnchorEl(null);
+  };
+
+  const handleExport = async (type) => {
+    setExportLoading(true);
+    setExportAnchorEl(null);
+    
+    try {
+      const timestamp = moment().format('YYYY-MM-DD_HH-mm-ss');
+      
+      switch (type) {
+        case 'csv': {
+          // Prepare comprehensive CSV data with multiple sheets
+          const summaryData = comparisonData.map(period => ({
+            'Period Name': period.name,
+            'Start Date': period.startDate,
+            'End Date': period.endDate,
+            'Duration (Days)': period.days,
+            'Performance (%)': (period.performance || 0).toFixed(2),
+            'Volatility (%)': (period.volatility || 0).toFixed(2),
+            'Max Drawdown (%)': (period.maxDrawdown || 0).toFixed(2),
+            'Sharpe Ratio': (period.sharpeRatio || 0).toFixed(3),
+            'Average Volume': period.avgVolume || 0,
+            'Start Price': period.chartData?.[0]?.price?.toFixed(2) || 'N/A',
+            'End Price': period.chartData?.[period.chartData.length - 1]?.price?.toFixed(2) || 'N/A',
+            'Max Price': period.chartData ? Math.max(...period.chartData.map(d => d.price)).toFixed(2) : 'N/A',
+            'Min Price': period.chartData ? Math.min(...period.chartData.map(d => d.price)).toFixed(2) : 'N/A',
+            'Total Volume': period.chartData ? period.chartData.reduce((sum, d) => sum + d.volume, 0).toLocaleString() : 'N/A'
+          }));
+
+          // Create detailed daily data for each period
+          const detailedData = [];
+          comparisonData.forEach(period => {
+            period.chartData?.forEach(day => {
+              detailedData.push({
+                'Period Name': period.name,
+                'Day': day.day,
+                'Date': day.date,
+                'Price': day.price?.toFixed(2) || 'N/A',
+                'Volume': day.volume?.toLocaleString() || 'N/A',
+                'Daily Performance (%)': day.performance?.toFixed(4) || 'N/A',
+                'Daily Volatility (%)': day.volatility?.toFixed(4) || 'N/A'
+              });
+            });
+          });
+
+          // Combine both datasets with separator
+          const combinedData = [
+            ...summaryData,
+            {}, // Empty row separator
+            { 'Period Name': '--- DETAILED DAILY DATA ---' },
+            {},
+            ...detailedData
+          ];
+          
+          await exportService.exportToCSV(combinedData, {
+            filename: `comparison-analysis-${timestamp}.csv`
+          });
+          break;
+        }
+        
+        case 'pdf': {
+          // Wait a moment for any animations to finish
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // Try to find the best element to capture
+          const comparisonElement = document.querySelector('[data-comparison-content]') || 
+                                    document.querySelector('[data-export-dialog]') ||
+                                    document.querySelector('.MuiDialog-paper');
+          
+          if (comparisonElement) {
+            // Temporarily adjust the element for better capture
+            const originalStyle = comparisonElement.style.cssText;
+            comparisonElement.style.overflow = 'visible';
+            comparisonElement.style.height = 'auto';
+            comparisonElement.style.maxHeight = 'none';
+            
+            // Scroll to top of dialog content
+            if (comparisonElement.scrollTop !== undefined) {
+              comparisonElement.scrollTop = 0;
+            }
+            
+            await exportService.exportToPDF(comparisonElement, {
+              filename: `comparison-analysis-${timestamp}.pdf`,
+              orientation: 'landscape',
+              format: 'a3', // Use larger format for better capture
+              quality: 1.0,
+              scale: 1.5, // Higher scale for better quality
+              margin: 5
+            });
+            
+            // Restore original styles
+            comparisonElement.style.cssText = originalStyle;
+          } else {
+            throw new Error('Could not find comparison dialog element for export');
+          }
+          break;
+        }
+        
+        case 'image': {
+          // Wait a moment for any animations to finish
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // Try to find the best element to capture
+          const comparisonElement = document.querySelector('[data-comparison-content]') || 
+                                    document.querySelector('[data-export-dialog]') ||
+                                    document.querySelector('.MuiDialog-paper');
+          
+          if (comparisonElement) {
+            // Temporarily adjust the element for better capture
+            const originalStyle = comparisonElement.style.cssText;
+            comparisonElement.style.overflow = 'visible';
+            comparisonElement.style.height = 'auto';
+            comparisonElement.style.maxHeight = 'none';
+            
+            // Scroll to top of dialog content
+            if (comparisonElement.scrollTop !== undefined) {
+              comparisonElement.scrollTop = 0;
+            }
+            
+            await exportService.exportToImage(comparisonElement, {
+              filename: `comparison-analysis-${timestamp}.png`,
+              scale: 2, // Higher scale for better quality
+              quality: 1.0,
+              backgroundColor: '#ffffff',
+              width: comparisonElement.scrollWidth || comparisonElement.offsetWidth,
+              height: comparisonElement.scrollHeight || comparisonElement.offsetHeight,
+              useCORS: true,
+              allowTaint: true
+            });
+            
+            // Restore original styles
+            comparisonElement.style.cssText = originalStyle;
+          } else {
+            throw new Error('Could not find comparison dialog element for export');
+          }
+          break;
+        }
+      }
+      
+      console.log(`✅ Successfully exported ${type.toUpperCase()} comparison data`);
+      setExportSuccess(`${type.toUpperCase()} exported successfully!`);
+      setTimeout(() => setExportSuccess(null), 3000); // Clear success message after 3 seconds
+    } catch (error) {
+      console.error('❌ Export failed:', error);
+      alert(`Export failed: ${error.message}`);
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
   // Get trend icon
   const getTrendIcon = (value) => {
     if (value > 0) return <TrendingUp sx={{ color: theme.palette.success.main }} />;
@@ -306,7 +478,8 @@ const DataComparison = ({ open, onClose }) => {
           backgroundColor: theme.palette.background.paper,
           color: theme.palette.text.primary,
           minHeight: '80vh'
-        }
+        },
+        'data-export-dialog': true
       }}
     >
       <DialogTitle
@@ -331,7 +504,22 @@ const DataComparison = ({ open, onClose }) => {
         </IconButton>
       </DialogTitle>
 
-      <DialogContent sx={{ p: 3, backgroundColor: theme.palette.background.default }}>
+      <DialogContent 
+        sx={{ 
+          p: 3, 
+          backgroundColor: theme.palette.background.default,
+          overflow: 'auto',
+          maxHeight: '70vh' // Allow scrolling but ensure full content is captured
+        }}
+        data-comparison-content
+      >
+        {/* Export Success Message */}
+        {exportSuccess && (
+          <Alert severity="success" sx={{ mb: 2 }}>
+            {exportSuccess}
+          </Alert>
+        )}
+
         {/* Period Selection Section */}
         <Paper sx={{ p: 3, mb: 3, backgroundColor: theme.palette.background.paper }}>
           <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -624,14 +812,46 @@ const DataComparison = ({ open, onClose }) => {
         <Button onClick={onClose}>Close</Button>
         <Button
           variant="contained"
-          disabled={comparisonData.length < 2}
-          onClick={() => {
-            // Could add export functionality here
-            console.log('Export comparison data:', comparisonData);
+          disabled={comparisonData.length < 2 || exportLoading}
+          onClick={handleExportClick}
+          startIcon={exportLoading ? <CircularProgress size={16} /> : <GetApp />}
+        >
+          {exportLoading ? 'Exporting...' : 'Export Comparison'}
+        </Button>
+
+        {/* Export Menu */}
+        <Menu
+          anchorEl={exportAnchorEl}
+          open={Boolean(exportAnchorEl)}
+          onClose={handleExportClose}
+          anchorOrigin={{
+            vertical: 'top',
+            horizontal: 'left',
+          }}
+          transformOrigin={{
+            vertical: 'bottom',
+            horizontal: 'left',
           }}
         >
-          Export Comparison
-        </Button>
+          <MenuItem onClick={() => handleExport('csv')}>
+            <ListItemIcon>
+              <TableChart fontSize="small" />
+            </ListItemIcon>
+            <ListItemText primary="Export as CSV" />
+          </MenuItem>
+          <MenuItem onClick={() => handleExport('pdf')}>
+            <ListItemIcon>
+              <PictureAsPdf fontSize="small" />
+            </ListItemIcon>
+            <ListItemText primary="Export as PDF" />
+          </MenuItem>
+          <MenuItem onClick={() => handleExport('image')}>
+            <ListItemIcon>
+              <Image fontSize="small" />
+            </ListItemIcon>
+            <ListItemText primary="Export as Image" />
+          </MenuItem>
+        </Menu>
       </DialogActions>
     </Dialog>
   );
