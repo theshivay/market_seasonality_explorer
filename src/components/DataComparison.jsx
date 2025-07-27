@@ -167,50 +167,62 @@ const DataComparison = ({ open, onClose }) => {
         const analysisData = [];
         
         for (const period of periods) {
-          // Generate mock data for the period (in real app, fetch from API)
-          const periodData = generateMockDataForPeriod(period.startDate, period.endDate);
-          const indicators = calculateAllIndicators(periodData);
-          
-          // Calculate key metrics
-          const startPrice = periodData[0]?.price || 100;
-          const endPrice = periodData[periodData.length - 1]?.price || 100;
-          const performance = ((endPrice - startPrice) / startPrice) * 100;
-          
-          // Use correct volatility property with fallback
-          const volatility = indicators.historicalVolatility || indicators.annualizedVolatility || Math.random() * 15 + 5;
-          const totalVolume = periodData.reduce((sum, day) => sum + (day.volume || 0), 0);
-          const avgVolume = totalVolume / periodData.length;
-          
-          // Max drawdown calculation
-          let maxDrawdown = 0;
-          let peak = startPrice;
-          periodData.forEach(day => {
-            if (day.price > peak) peak = day.price;
-            const drawdown = ((peak - day.price) / peak) * 100;
-            if (drawdown > maxDrawdown) maxDrawdown = drawdown;
-          });
-
-          analysisData.push({
-            id: period.id,
-            name: period.name,
-            startDate: period.startDate.format('MMM D, YYYY'),
-            endDate: period.endDate.format('MMM D, YYYY'),
-            days: period.endDate.diff(period.startDate, 'days') + 1,
-            performance: performance,
-            volatility: volatility,
-            avgVolume: avgVolume,
-            maxDrawdown: maxDrawdown,
-            sharpeRatio: performance / (volatility || 1),
-            color: period.color,
-            chartData: periodData.map((day, index) => ({
-              day: index + 1,
-              date: moment(period.startDate).add(index, 'days').format('MMM D'),
-              price: day.price,
-              volume: day.volume,
-              volatility: day.volatility || Math.random() * 10 + 2,
-              performance: ((day.price - startPrice) / startPrice) * 100
-            }))
-          });
+            let periodData = [];
+            try {
+              marketDataService.toggleDataSource(useRealData);
+              const historicalData = await marketDataService.getDailyData(period.startDate, selectedInstrument);
+              const start = moment(period.startDate);
+              const end = moment(period.endDate);
+              const filtered = Object.values(historicalData).filter(day => {
+                const d = moment(day.date);
+                return d.isSameOrAfter(start) && d.isSameOrBefore(end);
+              });
+              periodData = filtered.map(day => ({
+                date: day.date,
+                price: day.close,
+                volume: day.volume,
+                volatility: day.volatility,
+              }));
+            } catch (err) {
+              // 'err' is intentionally kept for debugging fallback errors
+              console.error('API error for period', period, err);
+              periodData = generateMockDataForPeriod(period.startDate, period.endDate);
+            }
+            const indicators = calculateAllIndicators(periodData);
+            const startPrice = periodData[0]?.price || 100;
+            const endPrice = periodData[periodData.length - 1]?.price || 100;
+            const performance = ((endPrice - startPrice) / startPrice) * 100;
+            const volatility = indicators.historicalVolatility || indicators.annualizedVolatility || Math.random() * 15 + 5;
+            const totalVolume = periodData.reduce((sum, day) => sum + (day.volume || 0), 0);
+            const avgVolume = totalVolume / periodData.length;
+            let maxDrawdown = 0;
+            let peak = startPrice;
+            periodData.forEach(day => {
+              if (day.price > peak) peak = day.price;
+              const drawdown = ((peak - day.price) / peak) * 100;
+              if (drawdown > maxDrawdown) maxDrawdown = drawdown;
+            });
+            analysisData.push({
+              id: period.id,
+              name: period.name,
+              startDate: period.startDate.format('MMM D, YYYY'),
+              endDate: period.endDate.format('MMM D, YYYY'),
+              days: period.endDate.diff(period.startDate, 'days') + 1,
+              performance: performance,
+              volatility: volatility,
+              avgVolume: avgVolume,
+              maxDrawdown: maxDrawdown,
+              sharpeRatio: performance / (volatility || 1),
+              color: period.color,
+              chartData: periodData.map((day, index) => ({
+                day: index + 1,
+                date: moment(period.startDate).add(index, 'days').format('MMM D'),
+                price: day.price,
+                volume: day.volume,
+                volatility: day.volatility || Math.random() * 10 + 2,
+                performance: ((day.price - startPrice) / startPrice) * 100
+              }))
+            });
         }
         
         setComparisonData(analysisData);
