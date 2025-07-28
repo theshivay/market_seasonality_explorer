@@ -1,13 +1,13 @@
 
-# 📊 Market Seasonality Explorer
+# Market Seasonality Explorer
 
 A sophisticated React application featuring an interactive calendar for visualizing market data, comprehensive theming system, and powerful export capabilities. Built with modern React, Material-UI, and enhanced with real-time data integration.
 
 ![React](https://img.shields.io/badge/React-19.1.0-blue?style=for-the-badge&logo=react) ![Material-UI](https://img.shields.io/badge/Material--UI-7.2.0-blue?style=for-the-badge&logo=mui) ![Vite](https://img.shields.io/badge/Vite-7.0.4-646CFF?style=for-the-badge&logo=vite) ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
-## ✨ Key Features
+## Key Features
 
-### 🗓️ **Interactive Calendar System**
+### **Interactive Calendar System**
 - **Multi-view Calendar**: Daily, weekly, and monthly views with smooth transitions
 - **Theme-aware Design**: Adaptive colors and styling across all themes
 - **Keyboard Navigation**: Full arrow key support, Enter/Escape shortcuts
@@ -15,35 +15,35 @@ A sophisticated React application featuring an interactive calendar for visualiz
 - **Volatility Heatmap**: Color-coded cells showing market volatility levels
 - **Responsive Design**: Mobile-first approach with touch-friendly interactions and sidebar overlay
 
-### 🎨 **Comprehensive Theming System**
+### **Comprehensive Theming System**
 - **5 Built-in Themes**: Default, Dark, Colorblind-friendly, High Contrast, Corporate
 - **Dynamic Theme Switching**: Real-time theme changes across all components
 - **Accessibility Compliance**: WCAG-compliant color schemes and contrast ratios
 - **Custom Theme Provider**: Centralized theme management with persistence
 - **Theme Demo Page**: Interactive showcase of all available themes
 
-### 📤 **Advanced Export Functionality**
+### **Advanced Export Functionality**
 - **PDF Export**: High-quality calendar exports with full formatting
 - **CSV Export**: Structured data export for analysis
 - **Image Export**: PNG/JPEG calendar snapshots
 - **Export Demo Page**: Comprehensive testing and preview capabilities
 - **Multi-format Support**: Various export options for different use cases
 
-### 📊 **Real-time Data Integration**
+### **Real-time Data Integration**
 - **Live Market Data**: Real-time cryptocurrency prices and volumes
 - **WebSocket Connections**: Live orderbook and ticker data
 - **Multi-asset Support**: Crypto, stocks, forex, commodities, indices
 - **Enhanced Instrument Selector**: Categorized asset selection with icons
 - **Data Source Toggle**: Switch between live and demo data
 
-### 📈 **Advanced Dashboard & Analytics**
+### **Advanced Dashboard & Analytics**
 - **Interactive Dashboard**: Comprehensive market data visualization
 - **Technical Indicators**: VIX-like volatility, moving averages, RSI
 - **Chart Integration**: Recharts-powered interactive visualizations
 - **Benchmark Comparison**: Performance analysis against market indices
 - **Risk Metrics**: Volatility analysis and risk assessment tools
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 | Category | Technology | Version |
 |----------|------------|---------|
@@ -59,51 +59,58 @@ A sophisticated React application featuring an interactive calendar for visualiz
 | **CSV Export** | PapaParse | 5.5.3 |
 | **File Downloads** | FileSaver.js | 2.0.5 |
 
-## 📁 Project Architecture
+## Project Architecture
 
 ```
 src/
 ├── components/
 │   ├── Calendar/
-│   │   ├── Calendar.jsx                    # Main interactive calendar component
+│   │   ├── Calendar.jsx                   # Main interactive calendar component
 │   │   ├── CalendarCell.jsx               # Theme-aware calendar cells with data visualization
 │   │   ├── CalendarHeader.jsx             # Calendar header with weekday labels
 │   │   ├── DateRangeSelector.jsx          # Advanced date range selection with analysis
 │   │   └── WeeklyCalendarCell.jsx         # Specialized cells for weekly view
 │   ├── Dashboard/
 │   │   └── DashboardSimple.jsx            # Comprehensive data dashboard with charts
+│   ├── AlertSystem.jsx                    # Alert System with their functionality
+│   ├── DataComparison.jsx                 # Data Comaprison with their functionality
 │   ├── EnhancedInstrumentSelector.jsx     # Multi-asset instrument picker with categories
 │   ├── ExportButton.jsx                   # Export functionality trigger
 │   ├── ExportMenu.jsx                     # Export options menu
 │   ├── ImplementationSummary.jsx          # Project features overview
-│   └── RealTimeDataDashboard.jsx          # Live market data visualization
+│   ├── RealTimeDataDashboard.jsx          # Live market data visualization
+│   └── Sidebar.jsx                        # Sidebar for demo
 ├── context/
 │   ├── AppContext.jsx                     # Main application state context
-│   ├── AppContextProvider.jsx            # App state provider with data management
-│   ├── ThemeContext.jsx                  # Theme management with 5 built-in themes
-│   └── ThemeContextBase.js               # Base theme context definition
+│   ├── AppContextProvider.jsx             # App state provider with data management
+│   ├── ThemeContext.jsx                   # Theme management with 5 built-in themes
+│   └── ThemeContextBase.js                # Base theme context definition
 ├── hooks/
-│   ├── useCustomTheme.js                 # Custom theme hook for components
-│   └── useMarketData.jsx                 # Market data fetching and management
+│   ├── useCustomTheme.js                  # Custom theme hook for components
+│   ├── useMarketData.jsx                  # Market data fetching and management
+│   └── useRealTimeData.jsx                # Real-time data fetching and management
 ├── pages/
-│   ├── ExportDemo.jsx                    # Export functionality demonstration
-│   ├── MarketCalendarPageNew.jsx         # Main application page with navigation
-│   └── ThemeDemo.jsx                     # Interactive theme showcase
+│   ├── ExportDemo.jsx                     # Export functionality demonstration
+│   ├── MarketCalendarPageNew.jsx          # Main application page with navigation
+│   └── ThemeDemo.jsx                      # Interactive theme showcase
 ├── services/
-│   ├── apiService.jsx                    # API integration layer
-│   ├── exportService.js                 # Export functionality (PDF, CSV, Image)
-│   └── marketDataService.jsx            # Market data processing and WebSocket
+│   ├── apiService.jsx                     # API integration layer
+│   ├── enhacedApiService.jsx              # Enhanced API Service for Multiple Financial Instruments
+│   ├── exportService.js                   # Export functionality (PDF, CSV, Image)
+│   ├── marketDataService.jsx              # Market data processing and WebSocket
+│   └── websocketService.jsx               # WebSocket Service for Real-time Market Data
 ├── utils/
-│   ├── constants.js                      # Application constants and configurations
-│   ├── dateUtils.jsx                    # Date manipulation utilities
-│   └── technicalIndicators.js           # Financial calculations and indicators
-├── App.jsx                               # Root component with theme integration
-├── main.jsx                              # Application entry point
-├── index.css                             # Global styles
-└── theme.js                              # Material-UI theme definitions (5 themes)
+│   ├── constants.js                       # Application constants and configurations
+│   ├── dateUtils.jsx                      # Date manipulation utilities
+│   ├── technicalIndicators.js             # Financial calculations and indicators 
+│   └── testImplementation.js              # Test script to verify WebSocket and API functionality
+├── App.jsx                                # Root component with theme integration
+├── index.css                              # Global styles
+├── main.jsx                               # Application entry point
+└── theme.js                               # Material-UI theme definitions (5 themes)
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 - **Node.js** 16+ (LTS recommended)
@@ -134,7 +141,7 @@ src/
 4. **Open application**
    Navigate to `http://localhost:5173` in your browser
 
-## 🔗 API Integration
+## API Integration
 
 The application now features **Enhanced Multi-Asset API Integration** supporting multiple financial instruments:
 
@@ -156,7 +163,7 @@ The application now features **Enhanced Multi-Asset API Integration** supporting
 - **WebSocket Monitoring** - Connection status and health indicators
 - **Multi-Exchange Support** - Binance, Coinbase Pro, OKX WebSocket feeds
 
-## �️ Development & Customization
+## Development & Customization
 
 ### Theme Customization
 Themes are defined in `src/theme.js` with complete Material-UI integration:
@@ -206,7 +213,7 @@ export const fetchCustomData = async (symbol) => {
 }
 ```
 
-## 🔧 Configuration & Environment
+## Configuration & Environment
 
 ### Environment Variables
 Create a `.env` file in the root directory:
@@ -242,7 +249,7 @@ export default defineConfig({
 })
 ```
 
-## 🚀 Deployment
+## Deployment
 
 ### Production Build
 ```bash
@@ -253,12 +260,11 @@ npm run build
 npm run preview
 ```
 
-## 📈 Roadmap & Future Enhancements
+## Roadmap & Future Enhancements
 
 ### Planned Features
 - [ ] **Advanced Charting**: Candlestick charts with drawing tools
 - [ ] **Portfolio Management**: Multi-asset portfolio tracking
-- [ ] **Alert System**: Price and volatility alerts
 - [ ] **News Integration**: Market news and sentiment analysis
 - [ ] **Mobile App**: React Native companion application
 - [ ] **API Rate Limiting**: Smart caching and request optimization
@@ -272,11 +278,11 @@ npm run preview
 - [ ] **News APIs**: Financial news aggregation
 - [ ] **Social Sentiment**: Twitter and Reddit sentiment analysis
 
-## 📄 License & Legal
+## License & Legal
 
 This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! Please follow these guidelines:
 
@@ -301,7 +307,7 @@ Please use the GitHub issue tracker to report bugs. Include:
 - Expected vs actual behavior
 - Screenshots if applicable
 
-## 👥 Authors 
+## Authors 
 
 ### Main Developer
 **Shivam Mishra** - *Full Stack Developer*
@@ -310,7 +316,7 @@ Please use the GitHub issue tracker to report bugs. Include:
 
 ---
 
-## 📞 Support & Contact
+## Support & Contact
 
 For questions, suggestions, or support:
 
@@ -320,4 +326,4 @@ For questions, suggestions, or support:
 
 ---
 
-*Built with ❤️ using React, Material-UI, and modern web technologies*
+<!-- *Built with ❤️ using React, Material-UI, and modern web technologies* -->
