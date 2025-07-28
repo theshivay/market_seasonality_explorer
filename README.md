@@ -1,3 +1,4 @@
+
 # 📊 Market Seasonality Explorer
 
 A sophisticated React application featuring an interactive calendar for visualizing market data, comprehensive theming system, and powerful export capabilities. Built with modern React, Material-UI, and enhanced with real-time data integration.
@@ -10,9 +11,9 @@ A sophisticated React application featuring an interactive calendar for visualiz
 - **Multi-view Calendar**: Daily, weekly, and monthly views with smooth transitions
 - **Theme-aware Design**: Adaptive colors and styling across all themes
 - **Keyboard Navigation**: Full arrow key support, Enter/Escape shortcuts
-- **Date Range Selection**: Advanced date picking with analysis capabilities
+- **Date Range Selection**: Advanced date picking with analysis capabilities, now placed beside the calendar for better usability
 - **Volatility Heatmap**: Color-coded cells showing market volatility levels
-- **Responsive Design**: Mobile-first approach with touch-friendly interactions
+- **Responsive Design**: Mobile-first approach with touch-friendly interactions and sidebar overlay
 
 ### 🎨 **Comprehensive Theming System**
 - **5 Built-in Themes**: Default, Dark, Colorblind-friendly, High Contrast, Corporate
@@ -133,47 +134,6 @@ src/
 4. **Open application**
    Navigate to `http://localhost:5173` in your browser
 
-### 📋 Available Scripts
-
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start development server with hot reload |
-| `npm run build` | Build optimized production version |
-| `npm run preview` | Preview production build locally |
-| `npm run lint` | Run ESLint for code quality checks |
-
-## 🎯 Core Features Deep Dive
-
-### 🗓️ Calendar System
-- **Multi-view Support**: Seamlessly switch between daily, weekly, and monthly views
-- **Interactive Navigation**: Click, keyboard, and touch navigation support
-- **Data Visualization**: Color-coded cells representing volatility, volume, and performance
-- **Date Range Selection**: Advanced range picking with statistical analysis
-- **Theme Integration**: Consistent styling across all 5 available themes
-
-### 🎨 Theming System
-- **Default Theme**: Clean, professional blue and white design
-- **Dark Theme**: Modern dark interface with blue accents
-- **Colorblind Theme**: Accessible colors optimized for color vision deficiencies
-- **High Contrast Theme**: Maximum contrast for accessibility compliance
-- **Corporate Theme**: Professional gray and blue corporate styling
-
-### 📤 Export Capabilities
-- **PDF Export**: Vector-quality calendar exports with preserved formatting
-- **CSV Export**: Structured data in comma-separated format for analysis
-- **Image Export**: High-resolution PNG/JPEG captures
-- **Batch Export**: Multiple format exports with single click
-- **Custom Formatting**: Configurable export options and layouts
-
-### 📊 Data & Analytics
-- **Real-time Integration**: Live cryptocurrency market data via WebSocket
-- **Multi-asset Support**: Cryptocurrencies, stocks, forex, commodities, indices
-- **Technical Analysis**: RSI, moving averages, volatility calculations
-- **Interactive Charts**: Recharts-powered visualizations with zoom and pan
-- **Performance Metrics**: Comprehensive financial analysis tools
-- Technical indicators and comparisons
-- Historical trend analysis
-
 ## 🔗 API Integration
 
 The application now features **Enhanced Multi-Asset API Integration** supporting multiple financial instruments:
@@ -195,53 +155,6 @@ The application now features **Enhanced Multi-Asset API Integration** supporting
 - **Order Book Data** - Live bid/ask spreads with market depth
 - **WebSocket Monitoring** - Connection status and health indicators
 - **Multi-Exchange Support** - Binance, Coinbase Pro, OKX WebSocket feeds
-
-## 🌐 API & Data Integration
-
-### Real-time Market Data
-- **Primary Source**: CoinGecko API for cryptocurrency market data
-- **WebSocket Feeds**: Live price tickers and orderbook data
-- **Multi-Exchange Support**: Binance, Coinbase Pro, OKX integration
-- **Data Coverage**: Real-time prices, 24h changes, trading volumes
-- **Historical Data**: Up to 2 years of daily market data
-
-### Supported Assets
-| Category | Examples | Data Source |
-|----------|----------|-------------|
-| **Cryptocurrencies** | BTC, ETH, SOL, ADA, DOT, XRP | Live API |
-| **Stocks** | AAPL, GOOGL, MSFT, TSLA, AMZN | Demo Data* |
-| **Forex** | EUR/USD, GBP/USD, USD/JPY | Demo Data* |
-| **Commodities** | Gold, Silver, Oil, Natural Gas | Demo Data* |
-| **Indices** | S&P 500, NASDAQ, Dow Jones, VIX | Demo Data* |
-
-*\*Traditional assets show demo data - easily configurable for live API integration*
-
-### Data Features
-- **Live Updates**: Real-time price monitoring with WebSocket connections
-- **Market Depth**: Live orderbook data with bid/ask spreads
-- **Historical Analysis**: Volatility calculations and trend analysis
-- **Performance Metrics**: Returns, moving averages, technical indicators
-
-## 📱 User Interface & Experience
-
-### Responsive Design
-- **Mobile-First**: Optimized for mobile devices with touch interactions
-- **Progressive Enhancement**: Enhanced features on larger screens
-- **Cross-Platform**: Works seamlessly on iOS, Android, and desktop
-- **Touch-Friendly**: Large touch targets and gesture support
-
-### Accessibility Features
-- **WCAG Compliance**: Meets accessibility guidelines
-- **Keyboard Navigation**: Full keyboard support throughout the application
-- **Screen Reader Support**: Proper ARIA labels and semantic HTML
-- **High Contrast Options**: Multiple theme options for visual accessibility
-- **Color-Blind Friendly**: Specialized theme for color vision deficiencies
-
-### Performance Optimization
-- **React 19**: Latest React features for optimal performance
-- **Code Splitting**: Lazy loading for improved load times
-- **Memoization**: Optimized re-rendering with React.memo
-- **Efficient State Management**: Context-based state with minimal re-renders
 
 ## �️ Development & Customization
 
@@ -340,24 +253,6 @@ npm run build
 npm run preview
 ```
 
-### Deployment Options
-- **Vercel**: Automatic deployment with GitHub integration
-- **Netlify**: Static site hosting with form handling
-- **AWS S3**: Static website hosting with CloudFront CDN
-- **GitHub Pages**: Free hosting for open source projects
-
-## 🔍 Testing & Quality Assurance
-
-### Code Quality
-- **ESLint**: Configured with React and accessibility rules
-- **Prettier**: Code formatting for consistent style
-- **PropTypes**: Runtime type checking for React components
-
-### Performance Monitoring
-- **React DevTools**: Component profiling and debugging
-- **Lighthouse**: Performance, accessibility, and SEO auditing
-- **Bundle Analysis**: Webpack bundle analyzer for size optimization
-
 ## 📈 Roadmap & Future Enhancements
 
 ### Planned Features
@@ -380,12 +275,6 @@ npm run preview
 ## 📄 License & Legal
 
 This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
-
-### Third-Party Licenses
-- React: MIT License
-- Material-UI: MIT License
-- Recharts: MIT License
-- All other dependencies retain their respective licenses
 
 ## 🤝 Contributing
 
@@ -412,24 +301,12 @@ Please use the GitHub issue tracker to report bugs. Include:
 - Expected vs actual behavior
 - Screenshots if applicable
 
-## 👥 Authors & Acknowledgments
+## 👥 Authors 
 
 ### Main Developer
 **Shivam Mishra** - *Full Stack Developer*
 - GitHub: [@theshivay](https://github.com/theshivay)
 - Project: [Market Seasonality Explorer](https://github.com/theshivay/market_seasonality_explorer)
-
-### Acknowledgments
-- **Material-UI Team** - Excellent React component library
-- **Recharts Community** - Powerful charting capabilities
-- **CoinGecko** - Reliable cryptocurrency market data API
-- **React Community** - Outstanding ecosystem and support
-- **Vite Team** - Lightning-fast build tool
-
-### Special Thanks
-- Open source contributors who make projects like this possible
-- The financial technology community for inspiration and best practices
-- Beta testers and early users for valuable feedback
 
 ---
 
