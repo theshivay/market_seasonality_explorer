@@ -565,75 +565,86 @@ const Calendar = ({ onDaySelect }) => {
         </Box>
       </Paper>
 
-      {/* Date Range Selector */}
-      <DateRangeSelector />
-      
-      <Paper 
-        elevation={2}
-        sx={{
-          overflow: 'hidden',
-          borderRadius: { xs: 1, sm: 2 },
-          transition: 'all 0.3s ease',
-          boxShadow: { xs: '0 2px 8px rgba(0,0,0,0.08)', md: '0 4px 12px rgba(0,0,0,0.12)' }
-        }}
-      >
-        <Box sx={{ 
-          overflowX: 'auto', 
-          overflowY: 'auto',
-          WebkitOverflowScrolling: 'touch', // For smooth scrolling on iOS
-          minHeight: { xs: '50vh', sm: '60vh' }
-        }}>
-          <Box style={gridStyle}>
-            <Grid 
-              container 
-              spacing={0} 
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: `repeat(${getGridColumns()}, 1fr)`,
-                width: '100%',
-                minWidth: { xs: '600px', md: '900px' }, // Ensure minimum width for scrolling on mobile
-              }}
-            >
-              {/* Header row with weekday names */}
-              <CalendarHeader viewMode={viewMode} />
-              
-              {/* Calendar cells */}
-              {days.map((day, index) => {
-                if (viewMode === VIEW_MODES.WEEK) {
-                  // Use WeeklyCalendarCell for week view
-                  return (
-                    <WeeklyCalendarCell
-                      key={index}
-                      weekStart={day}
-                      marketData={marketData || {}}
-                      loading={loading}
-                      isCurrentWeek={day && day.isSame && day.isSame(moment(), 'week')}
-                      isSelected={isDaySelected(day)}
-                      onWeekClick={handleDayClick}
-                    />
-                  );
-                } else {
-                  // Use regular CalendarCell for day/month view
-                  return (
-                    <CalendarCell 
-                      key={index} 
-                      day={day}
-                      viewMode={viewMode}
-                      marketData={marketData || {}}
-                      loading={loading}
-                      isToday={day && day.isSame && day.isSame(moment(), 'day')}
-                      isCurrentMonth={day && day.month && day.month() === currentDate.month()}
-                      isSelected={isDaySelected(day)}
-                      isInRangePreview={isDayInRangePreview(day)}
-                      onDayClick={handleDayClick}
-                    />
-                  );
-                }
-              })}
-            </Grid>
-          </Box>
+      {/* Responsive flex layout: calendar grid and DateRangeSelector side by side on desktop, stacked on mobile */}
+      <Box sx={{
+        display: 'flex',
+        flexDirection: { xs: 'column', md: 'row' },
+        gap: { xs: 2, md: 4 },
+        alignItems: 'flex-start',
+        width: '100%',
+        mt: 2
+      }}>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Paper 
+            elevation={2}
+            sx={{
+              overflow: 'hidden',
+              borderRadius: { xs: 1, sm: 2 },
+              transition: 'all 0.3s ease',
+              boxShadow: { xs: '0 2px 8px rgba(0,0,0,0.08)', md: '0 4px 12px rgba(0,0,0,0.12)' }
+            }}
+          >
+            <Box sx={{ 
+              overflowX: 'auto', 
+              overflowY: 'auto',
+              WebkitOverflowScrolling: 'touch', // For smooth scrolling on iOS
+              minHeight: { xs: '50vh', sm: '60vh' }
+            }}>
+              <Box style={gridStyle}>
+                <Grid 
+                  container 
+                  spacing={0} 
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: `repeat(${getGridColumns()}, 1fr)`,
+                    width: '100%',
+                    minWidth: { xs: '600px', md: '900px' }, // Ensure minimum width for scrolling on mobile
+                  }}
+                >
+                  {/* Header row with weekday names */}
+                  <CalendarHeader viewMode={viewMode} />
+                  {/* Calendar cells */}
+                  {days.map((day, index) => {
+                    if (viewMode === VIEW_MODES.WEEK) {
+                      // Use WeeklyCalendarCell for week view
+                      return (
+                        <WeeklyCalendarCell
+                          key={index}
+                          weekStart={day}
+                          marketData={marketData || {}}
+                          loading={loading}
+                          isCurrentWeek={day && day.isSame && day.isSame(moment(), 'week')}
+                          isSelected={isDaySelected(day)}
+                          onWeekClick={handleDayClick}
+                        />
+                      );
+                    } else {
+                      // Use regular CalendarCell for day/month view
+                      return (
+                        <CalendarCell 
+                          key={index} 
+                          day={day}
+                          viewMode={viewMode}
+                          marketData={marketData || {}}
+                          loading={loading}
+                          isToday={day && day.isSame && day.isSame(moment(), 'day')}
+                          isCurrentMonth={day && day.month && day.month() === currentDate.month()}
+                          isSelected={isDaySelected(day)}
+                          isInRangePreview={isDayInRangePreview(day)}
+                          onDayClick={handleDayClick}
+                        />
+                      );
+                    }
+                  })}
+                </Grid>
+              </Box>
+            </Box>
+          </Paper>
         </Box>
-      </Paper>
+        <Box sx={{ width: { xs: '100%', md: 320 }, minWidth: 0 }}>
+          <DateRangeSelector />
+        </Box>
+      </Box>
     </Box>
   );
 };
