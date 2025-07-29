@@ -5,6 +5,9 @@ A sophisticated React application featuring an interactive calendar for visualiz
 
 ![React](https://img.shields.io/badge/React-19.1.0-blue?style=for-the-badge&logo=react) ![Material-UI](https://img.shields.io/badge/Material--UI-7.2.0-blue?style=for-the-badge&logo=mui) ![Vite](https://img.shields.io/badge/Vite-7.0.4-646CFF?style=for-the-badge&logo=vite) ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
+## [Demo Video](./Assets/demo_video.mp4)
+<!-- ## [Demo Video](https://drive.google.com/file/d/1vikGf-4m0Zo9n3Xx5NeWBB6dhQjPEO34/view?usp=sharing) -->
+
 ## Key Features
 
 ### **Interactive Calendar System**
@@ -277,10 +280,6 @@ npm run preview
 - [ ] **Polygon.io**: Real-time equity and crypto data
 - [ ] **News APIs**: Financial news aggregation
 - [ ] **Social Sentiment**: Twitter and Reddit sentiment analysis
-
-## License & Legal
-
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
 
 ## Contributing
 
