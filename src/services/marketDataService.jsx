@@ -210,10 +210,10 @@ class MarketDataService {
       const availableDates = Object.keys(formattedData);
       console.log(`[MarketDataService] Available dates in API response: ${availableDates.join(', ')}`);
       
-      // Special check for today - this is July 26, 2025
-      const today = '2025-07-26';
+      // Special check for today - this is July 29, 2025
+      const today = '2025-07-29';
       
-      // Always inject data for today (July 26, 2025)
+      // Always inject data for today (July 29, 2025)
       console.log(`[MarketDataService] Ensuring data exists for today (${today})`);
       
       // Create synthetic data for today with realistic values
