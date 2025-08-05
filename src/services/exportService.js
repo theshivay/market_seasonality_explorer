@@ -3,6 +3,7 @@ import jsPDF from 'jspdf';
 import Papa from 'papaparse';
 import { saveAs } from 'file-saver';
 import moment from 'moment';
+import { getTodayString } from '../utils/dateUtils';
 
 /**
  * Export Service
@@ -18,7 +19,7 @@ class ExportService {
   async exportToPDF(calendarElement, options = {}) {
     try {
       const {
-        filename = `market-calendar-${moment().format('YYYY-MM-DD')}.pdf`,
+        filename = `market-calendar-${getTodayString()}.pdf`,
         quality = 0.95,
         format = 'a4',
         orientation = 'landscape',
@@ -84,7 +85,7 @@ class ExportService {
   async exportToImage(calendarElement, options = {}) {
     try {
       const {
-        filename = `market-calendar-${moment().format('YYYY-MM-DD')}.png`,
+        filename = `market-calendar-${getTodayString()}.png`,
         format = 'png',
         quality = 0.95,
         scale = 2,
@@ -132,7 +133,7 @@ class ExportService {
   exportToCSV(calendarData, options = {}) {
     try {
       const {
-        filename = `market-calendar-data-${moment().format('YYYY-MM-DD')}.csv`,
+        filename = `market-calendar-data-${getTodayString()}.csv`,
         includeHeaders = true,
         delimiter = ','
       } = options;
@@ -196,7 +197,7 @@ class ExportService {
   exportToEnhancedCSV(calendarData, analysisData, options = {}) {
     try {
       const {
-        filename = `market-calendar-analysis-${moment().format('YYYY-MM-DD')}.csv`
+        filename = `market-calendar-analysis-${getTodayString()}.csv`
       } = options;
 
       console.log('📈 Starting enhanced CSV export...');
@@ -257,7 +258,7 @@ class ExportService {
     return {
       exportType,
       timestamp: moment().toISOString(),
-      filename: options.filename || `market-calendar-${exportType}-${moment().format('YYYY-MM-DD')}`,
+      filename: options.filename || `market-calendar-${exportType}-${getTodayString()}`,
       options: options,
       userAgent: navigator.userAgent,
       version: '1.0.0'

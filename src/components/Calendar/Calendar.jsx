@@ -31,6 +31,7 @@ import WeeklyCalendarCell from './WeeklyCalendarCell';
 import DateRangeSelector from './DateRangeSelector';
 import ExportButton from '../ExportButton';
 import { getCalendarDaysForMonth } from '../../utils/dateUtils';
+import { getTodayString } from '../../utils/dateUtils';
 import useMarketData from '../../hooks/useMarketData';
 
 const Calendar = ({ onDaySelect }) => {
@@ -225,8 +226,8 @@ const Calendar = ({ onDaySelect }) => {
       useRealData
     });
     
-    // Check if we have data for today (July 26, 2025)
-    const today = '2025-07-26';
+    // Check if we have data for today (current date)
+    const today = getTodayString();
     if (marketData && marketData[today]) {
       console.log(`[Calendar] Found data for today (${today}):`, marketData[today]);
     } else {
@@ -369,14 +370,11 @@ const Calendar = ({ onDaySelect }) => {
       className="calendar-container"
       tabIndex={0} // Make it focusable
       sx={{ 
-        overflowX: 'auto',
-        overflowY: 'auto',
-        maxHeight: { 
-          xs: viewMode === VIEW_MODES.MONTH ? '70vh' : '100%',
-          md: viewMode === VIEW_MODES.MONTH ? '80vh' : '100%'
-        },
-        WebkitOverflowScrolling: 'touch', // For smooth scrolling on iOS
-        outline: 'none', // Remove focus outline for clean look
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        outline: 'none',
         backgroundColor: theme.palette.background.default,
         color: theme.palette.text.primary,
         '&:focus': {
@@ -386,70 +384,80 @@ const Calendar = ({ onDaySelect }) => {
         }
       }}
       onClick={(e) => {
-        // Focus the calendar when clicked to enable keyboard navigation
         e.currentTarget.focus();
       }}
     >
+      {/* Professional Header */}
       <Paper 
         elevation={2} 
         sx={{ 
-          p: { xs: 1, sm: 1.5, md: 2 }, 
-          mb: { xs: 1, sm: 1.5, md: 2 }, 
-          borderRadius: { xs: 1, sm: 2 },
+          mb: 3,
+          borderRadius: 2,
           background: theme.palette.background.paper,
           color: theme.palette.text.primary,
-          position: 'sticky',
-          top: 0,
-          zIndex: 10,
           border: `1px solid ${theme.palette.divider}`,
+          overflow: 'hidden',
         }}
       >
         <Box 
           sx={{ 
             display: 'flex', 
-            flexDirection: { xs: 'column', md: 'row' },
-            alignItems: { xs: 'center', md: 'center' },
+            flexDirection: { xs: 'column', lg: 'row' },
+            alignItems: 'center',
             justifyContent: 'space-between',
-            gap: { xs: 1, sm: 1.5, md: 2 }
+            p: { xs: 2, sm: 2.5, md: 3 },
+            gap: { xs: 2, lg: 3 },
+            background: theme.palette.mode === 'dark'
+              ? 'linear-gradient(135deg, #1E293B 0%, #334155 100%)'
+              : 'linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%)',
           }}
         >
+          {/* Navigation Section */}
           <Box 
             sx={{ 
               display: 'flex', 
-              alignItems: 'center', 
-              flexWrap: 'wrap', 
-              gap: 1,
-              justifyContent: { xs: 'center', md: 'flex-start' },
-              width: { xs: '100%', md: 'auto' }
+              alignItems: 'center',
+              gap: 2,
+              justifyContent: { xs: 'center', lg: 'flex-start' },
             }}
           >
             <Box 
               sx={{ 
                 display: 'flex', 
                 alignItems: 'center',
-                justifyContent: { xs: 'center', md: 'flex-start' }
+                backgroundColor: theme.palette.background.paper,
+                borderRadius: 2,
+                border: `1px solid ${theme.palette.divider}`,
+                overflow: 'hidden',
               }}
             >
               <Tooltip title="Previous">
                 <IconButton 
                   onClick={getPrevHandler()} 
-                  color="primary" 
                   sx={{ 
                     color: theme.palette.text.secondary,
-                    padding: { xs: '4px', sm: '8px' }
+                    borderRadius: 0,
+                    '&:hover': {
+                      backgroundColor: theme.palette.action.hover,
+                      color: theme.palette.primary.main,
+                    },
                   }}
                 >
-                  <ChevronLeft fontSize={isMobile ? "small" : "medium"} />
+                  <ChevronLeft />
                 </IconButton>
               </Tooltip>
               
               <Typography 
-                variant={isMobile ? "subtitle1" : "h6"} 
+                variant="h6" 
                 sx={{ 
-                  mx: { xs: 0.5, sm: 1 }, 
-                  fontWeight: 600, 
+                  px: 3,
+                  py: 1,
+                  fontWeight: 600,
                   whiteSpace: 'nowrap',
-                  fontSize: { xs: '0.9rem', sm: '1.1rem', md: '1.25rem' }
+                  fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' },
+                  color: theme.palette.text.primary,
+                  minWidth: '200px',
+                  textAlign: 'center',
                 }}
               >
                 {getDateTitle()}
@@ -458,28 +466,37 @@ const Calendar = ({ onDaySelect }) => {
               <Tooltip title="Next">
                 <IconButton 
                   onClick={getNextHandler()} 
-                  color="primary" 
                   sx={{ 
                     color: theme.palette.text.secondary,
-                    padding: { xs: '4px', sm: '8px' }
+                    borderRadius: 0,
+                    '&:hover': {
+                      backgroundColor: theme.palette.action.hover,
+                      color: theme.palette.primary.main,
+                    },
                   }}
                 >
-                  <ChevronRight fontSize={isMobile ? "small" : "medium"} />
+                  <ChevronRight />
                 </IconButton>
               </Tooltip>
             </Box>
 
             <Tooltip title="Go to today">
               <Button 
-                startIcon={<Today fontSize={isMobile ? "small" : "medium"} />} 
+                startIcon={<Today />} 
                 onClick={goToToday}
                 variant="outlined"
-                size="small"
+                size="medium"
                 sx={{ 
-                  ml: { xs: 0, md: 2 },
-                  py: { xs: 0.5, sm: 0.75 },
-                  px: { xs: 1, sm: 1.5 },
-                  fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                  ml: 1,
+                  borderRadius: 2,
+                  px: 2,
+                  py: 1,
+                  fontWeight: 500,
+                  '&:hover': {
+                    transform: 'translateY(-1px)',
+                    boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+                  },
+                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                 }}
               >
                 Today
@@ -487,110 +504,152 @@ const Calendar = ({ onDaySelect }) => {
             </Tooltip>
           </Box>
           
+          {/* Controls Section */}
           <Box 
             sx={{ 
               display: 'flex', 
               alignItems: 'center', 
-              gap: { xs: 1, md: 2 }, 
+              gap: 2,
               flexWrap: 'wrap',
-              justifyContent: { xs: 'center', md: 'flex-end' },
-              width: { xs: '100%', md: 'auto' }
+              justifyContent: { xs: 'center', lg: 'flex-end' },
             }}
           >
+            {/* View Mode Toggle */}
             <ToggleButtonGroup
               value={viewMode}
               exclusive
               onChange={handleViewModeChange}
               aria-label="view mode"
-              size={isMobile ? 'small' : 'medium'}
+              size="medium"
               sx={{ 
+                backgroundColor: theme.palette.background.paper,
+                borderRadius: 2,
+                border: `1px solid ${theme.palette.divider}`,
                 '& .MuiToggleButtonGroup-grouped': {
-                  border: '1px solid',
-                  borderColor: theme.palette.divider,
-                  padding: { xs: '4px 8px', sm: '6px 12px' }
+                  border: 'none',
+                  borderRadius: '0 !important',
+                  '&:not(:first-of-type)': {
+                    borderLeft: `1px solid ${theme.palette.divider}`,
+                  },
+                  '&.Mui-selected': {
+                    backgroundColor: theme.palette.primary.main,
+                    color: theme.palette.primary.contrastText,
+                    '&:hover': {
+                      backgroundColor: theme.palette.primary.dark,
+                    },
+                  },
+                  '&:hover': {
+                    backgroundColor: theme.palette.action.hover,
+                  },
                 }
               }}
             >
               <ToggleButton value={VIEW_MODES.MONTH} aria-label="month view">
                 <Tooltip title="Month View">
-                  <CalendarViewMonth fontSize={isMobile ? "small" : "medium"} />
+                  <CalendarViewMonth />
                 </Tooltip>
               </ToggleButton>
               <ToggleButton value={VIEW_MODES.WEEK} aria-label="week view">
                 <Tooltip title="Week View">
-                  <CalendarViewWeek fontSize={isMobile ? "small" : "medium"} />
+                  <CalendarViewWeek />
                 </Tooltip>
               </ToggleButton>
               <ToggleButton value={VIEW_MODES.DAY} aria-label="day view">
                 <Tooltip title="Day View">
-                  <CalendarViewDay fontSize={isMobile ? "small" : "medium"} />
+                  <CalendarViewDay />
                 </Tooltip>
               </ToggleButton>
             </ToggleButtonGroup>
             
+            {/* Zoom and Export Controls */}
             <Box sx={{ 
-              display: { xs: 'none', sm: 'flex' }, 
-              alignItems: 'center', 
-              gap: 0.5 
+              display: 'flex', 
+              alignItems: 'center',
+              backgroundColor: theme.palette.background.paper,
+              borderRadius: 2,
+              border: `1px solid ${theme.palette.divider}`,
+              overflow: 'hidden',
             }}>
               <Tooltip title="Zoom Out">
                 <IconButton 
                   onClick={handleZoomOut} 
-                  disabled={zoomLevel <= 1} 
-                  size={isMobile ? "small" : "medium"}
+                  disabled={zoomLevel <= 1}
+                  sx={{
+                    borderRadius: 0,
+                    '&:hover': {
+                      backgroundColor: theme.palette.action.hover,
+                    },
+                  }}
                 >
-                  <ZoomOut fontSize={isMobile ? "small" : "medium"} />
+                  <ZoomOut />
                 </IconButton>
               </Tooltip>
               <Tooltip title="Zoom In">
                 <IconButton 
                   onClick={handleZoomIn} 
-                  disabled={zoomLevel >= 1.8} 
-                  size={isMobile ? "small" : "medium"}
+                  disabled={zoomLevel >= 1.8}
+                  sx={{
+                    borderRadius: 0,
+                    borderLeft: `1px solid ${theme.palette.divider}`,
+                    '&:hover': {
+                      backgroundColor: theme.palette.action.hover,
+                    },
+                  }}
                 >
-                  <ZoomIn fontSize={isMobile ? "small" : "medium"} />
+                  <ZoomIn />
                 </IconButton>
               </Tooltip>
-              <ExportButton 
-                calendarElement={calendarRef.current}
-                calendarData={marketData}
-                analysisData={null}
-                variant="icon"
-                size={isMobile ? "small" : "medium"}
-              />
-              {/* Debug marketData */}
-              {console.log('📊 Calendar marketData for export:', marketData)}
+              <Box sx={{ borderLeft: `1px solid ${theme.palette.divider}` }}>
+                <ExportButton 
+                  calendarElement={calendarRef.current}
+                  calendarData={marketData}
+                  analysisData={null}
+                  variant="icon"
+                  size="medium"
+                />
+              </Box>
             </Box>
           </Box>
         </Box>
       </Paper>
 
-      {/* Responsive flex layout: calendar grid and DateRangeSelector side by side on desktop, stacked on mobile */}
+      {/* Main Calendar Area */}
       <Box sx={{
         display: 'flex',
-        flexDirection: { xs: 'column', md: 'row' },
-        gap: { xs: 2, md: 4 },
-        alignItems: 'flex-start',
-        width: '100%',
-        mt: 2
+        flexDirection: { xs: 'column', xl: 'row' },
+        gap: 3,
+        flex: 1,
+        minHeight: 0, // Important for flex children
       }}>
-        <Box sx={{ flex: 1, minWidth: 0 }}>
+        {/* Calendar Grid */}
+        <Box sx={{ 
+          flex: 1, 
+          minWidth: 0, // Important for flex children
+          display: 'flex',
+          flexDirection: 'column',
+        }}>
           <Paper 
             elevation={2}
             sx={{
+              flex: 1,
+              borderRadius: 2,
               overflow: 'hidden',
-              borderRadius: { xs: 1, sm: 2 },
-              transition: 'all 0.3s ease',
-              boxShadow: { xs: '0 2px 8px rgba(0,0,0,0.08)', md: '0 4px 12px rgba(0,0,0,0.12)' }
+              border: `1px solid ${theme.palette.divider}`,
+              display: 'flex',
+              flexDirection: 'column',
             }}
           >
             <Box sx={{ 
-              overflowX: 'auto', 
-              overflowY: 'auto',
-              WebkitOverflowScrolling: 'touch', // For smooth scrolling on iOS
-              minHeight: { xs: '50vh', sm: '60vh' }
+              flex: 1,
+              overflow: 'auto',
+              position: 'relative',
             }}>
-              <Box style={gridStyle}>
+              <Box 
+                style={{
+                  ...gridStyle,
+                  minHeight: '100%',
+                }}
+              >
                 <Grid 
                   container 
                   spacing={0} 
@@ -598,15 +657,19 @@ const Calendar = ({ onDaySelect }) => {
                     display: 'grid',
                     gridTemplateColumns: `repeat(${getGridColumns()}, 1fr)`,
                     width: '100%',
-                    minWidth: { xs: '600px', md: '900px' }, // Ensure minimum width for scrolling on mobile
+                    minWidth: { 
+                      xs: viewMode === VIEW_MODES.MONTH ? '700px' : '100%', 
+                      md: '100%' 
+                    },
+                    minHeight: '100%',
                   }}
                 >
                   {/* Header row with weekday names */}
                   <CalendarHeader viewMode={viewMode} />
+                  
                   {/* Calendar cells */}
                   {days.map((day, index) => {
                     if (viewMode === VIEW_MODES.WEEK) {
-                      // Use WeeklyCalendarCell for week view
                       return (
                         <WeeklyCalendarCell
                           key={index}
@@ -619,7 +682,6 @@ const Calendar = ({ onDaySelect }) => {
                         />
                       );
                     } else {
-                      // Use regular CalendarCell for day/month view
                       return (
                         <CalendarCell 
                           key={index} 
@@ -641,7 +703,12 @@ const Calendar = ({ onDaySelect }) => {
             </Box>
           </Paper>
         </Box>
-        <Box sx={{ width: { xs: '100%', md: 320 }, minWidth: 0 }}>
+
+        {/* Date Range Selector */}
+        <Box sx={{ 
+          width: { xs: '100%', xl: 320 },
+          flexShrink: 0,
+        }}>
           <DateRangeSelector />
         </Box>
       </Box>

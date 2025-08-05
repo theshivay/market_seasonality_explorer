@@ -1,5 +1,10 @@
 import moment from 'moment';
 
+// Get today's date in YYYY-MM-DD format
+export const getTodayString = () => {
+  return moment().format('YYYY-MM-DD');
+};
+
 // Format date in different formats
 export const formatDate = (date, format = 'YYYY-MM-DD') => {
   if (!date) return '';

@@ -3,8 +3,9 @@
 @tailwind utilities;
 
 :root {
-  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  line-height: 1.6;
   font-weight: 400;
   color-scheme: light dark;
   
@@ -12,6 +13,12 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 html, body {
@@ -19,35 +26,57 @@ html, body {
   padding: 0;
   min-height: 100vh;
   overflow-x: hidden;
-  -webkit-text-size-adjust: 100%; /* Prevent font scaling in landscape on iOS */
-  touch-action: manipulation; /* Prevent double-tap to zoom on touch devices */
+  scroll-behavior: smooth;
 }
 
-/* Apply fluid typography for better responsiveness */
+/* Root element for React */
+#root {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Professional responsive typography scale */
 html {
   font-size: 16px;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   html {
     font-size: 15px;
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 768px) {
   html {
     font-size: 14px;
   }
 }
 
-/* Mobile-specific adjustments */
 @media (max-width: 480px) {
-  .MuiDrawer-paper {
-    width: 100% !important;
+  html {
+    font-size: 13px;
   }
 }
 
-/* Custom scrollbar - Hide on mobile for better performance */
+/* Professional focus management */
+button:focus,
+button:focus-visible,
+[role="button"]:focus,
+[role="button"]:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+  outline-style: solid;
+}
+
+/* Remove default focus for mouse users */
+button:focus:not(:focus-visible),
+[role="button"]:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Custom scrollbar for desktop - professional styling */
 @media (min-width: 768px) {
   ::-webkit-scrollbar {
     width: 8px;
@@ -55,45 +84,165 @@ html {
   }
 
   ::-webkit-scrollbar-track {
-    background: rgba(0,0,0,0.05);
+    background: rgba(0, 0, 0, 0.05);
     border-radius: 8px;
   }
 
   ::-webkit-scrollbar-thumb {
-    background: rgba(46, 80, 119, 0.5);
+    background: linear-gradient(135deg, #64748b 0%, #475569 100%);
     border-radius: 8px;
+    transition: background 0.2s ease;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(46, 80, 119, 0.7);
+    background: linear-gradient(135deg, #475569 0%, #334155 100%);
+  }
+
+  /* Scrollbar for dark themes */
+  [data-theme="dark"] ::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  [data-theme="dark"] ::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+  }
+
+  [data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%);
   }
 }
 
-/* Hide scrollbars on mobile devices but keep functionality */
+/* Hide scrollbars on mobile for better UX */
 @media (max-width: 767px) {
-  .calendar-container {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+  .calendar-container,
+  .mobile-scroll {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
   
-  .calendar-container::-webkit-scrollbar {
-    display: none;  /* Chrome, Safari and Opera */
+  .calendar-container::-webkit-scrollbar,
+  .mobile-scroll::-webkit-scrollbar {
+    display: none;
   }
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+/* Professional loading states */
+.loading-shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+[data-theme="dark"] .loading-shimmer {
+  background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+  background-size: 200% 100%;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
   }
-  a:hover {
-    color: #747bff;
+  100% {
+    background-position: 200% 0;
   }
-  button {
-    background-color: #f9f9f9;
+}
+
+/* Professional card hover effects */
+.professional-card {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.professional-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* Enhanced Material-UI component overrides */
+.MuiPaper-root {
+  backdrop-filter: blur(10px);
+}
+
+.MuiButton-root {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.MuiIconButton-root {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Professional mobile optimizations */
+@media (max-width: 767px) {
+  /* Prevent horizontal scroll issues */
+  .MuiContainer-root {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
   }
+  
+  /* Better touch targets */
+  .MuiButton-root {
+    min-height: 44px;
+  }
+  
+  .MuiIconButton-root {
+    padding: 12px;
+  }
+  
+  /* Improved table responsiveness */
+  .MuiTableContainer-root {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Professional theme transitions */
+* {
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .MuiButton-outlined {
+    border-width: 2px;
+  }
+  
+  .MuiCard-root {
+    border: 1px solid currentColor;
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  
+  .MuiPaper-root {
+    box-shadow: none !important;
+    border: 1px solid #ccc !important;
+  }
+}
+
+/* Performance optimizations */
+.MuiGrid-container {
+  contain: layout;
+}
+
+.MuiCard-root {
+  contain: layout style;
 }

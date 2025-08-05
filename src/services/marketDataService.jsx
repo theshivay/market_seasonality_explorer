@@ -4,6 +4,7 @@
  * Demo data is available as fallback when real data is disabled.
  */
 import moment from 'moment';
+import { getTodayString } from '../utils/dateUtils';
 import { fetchRealMarketData, fetchExtendedMarketData } from './apiService';
 import { fetchEnhancedMarketData, detectAssetType, ASSET_TYPES } from './enhancedApiService';
 // import fetchEnhancedMarketData, { detectAssetType, ASSET_TYPES } from './enhancedApiService';
@@ -43,7 +44,7 @@ class MarketDataService {
     }
     
     const dateStr = moment(date).format('YYYY-MM-DD');
-    const currentDate = moment().format('YYYY-MM-DD'); // Today's date for logging
+    const currentDate = getTodayString(); // Today's date for logging
     console.log(`[MarketDataService] getDailyData called for ${instrumentId} on ${dateStr} (Today is ${currentDate})`);
     
     // Generate fallback/demo data function for reuse
@@ -210,10 +211,11 @@ class MarketDataService {
       const availableDates = Object.keys(formattedData);
       console.log(`[MarketDataService] Available dates in API response: ${availableDates.join(', ')}`);
       
-      // Special check for today - this is July 29, 2025
-      const today = '2025-07-29';
+      // Special check for today - dynamically get current date
+      const today = getTodayString();
+      console.log(`[MarketDataService] Dynamic today date is: ${today} (was previously hardcoded to 2025-07-29)`);
       
-      // Always inject data for today (July 29, 2025)
+      // Always inject data for today
       console.log(`[MarketDataService] Ensuring data exists for today (${today})`);
       
       // Create synthetic data for today with realistic values
@@ -254,7 +256,7 @@ class MarketDataService {
       
       console.log(`[MarketDataService] Successfully retrieved data for ${instrumentId}: ${Object.keys(formattedData).length} days`);
       
-      // Always add today's data (July 26, 2025) regardless of whether it already exists
+      // Always add today's data regardless of whether it already exists
       console.log(`[MarketDataService] Adding definitive synthetic data for today (${today})`);
       formattedData[today] = {
         date: today,

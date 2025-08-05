@@ -5,10 +5,17 @@ A sophisticated React application featuring an interactive calendar for visualiz
 
 ![React](https://img.shields.io/badge/React-19.1.0-blue?style=for-the-badge&logo=react) ![Material-UI](https://img.shields.io/badge/Material--UI-7.2.0-blue?style=for-the-badge&logo=mui) ![Vite](https://img.shields.io/badge/Vite-7.0.4-646CFF?style=for-the-badge&logo=vite) ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
-## [Demo Video](./Assets/demo_video.mp4)
-<!-- ## [Demo Video](https://drive.google.com/file/d/1vikGf-4m0Zo9n3Xx5NeWBB6dhQjPEO34/view?usp=sharing) -->
+## Demo Video 
+***[Repo](./Assets/demo_video.mp4)*** or ***[<u>Link</u>](https://drive.google.com/file/d/1vikGf-4m0Zo9n3Xx5NeWBB6dhQjPEO34/view?usp=sharing)***
 
 ## Key Features
+
+### **AI Finance Assistant** 🤖
+- **Google Gemini Integration**: AI-powered finance chatbot with professional responses
+- **Finance-Focused AI**: Specialized responses for market analysis, investment strategies, and trading insights
+- **Smart Conversation**: Context-aware responses with examples and calculations
+- **Professional UI**: Material-UI dialog system with floating action button
+- **Interactive Features**: Suggestion chips for common finance topics
 
 ### **Interactive Calendar System**
 - **Multi-view Calendar**: Daily, weekly, and monthly views with smooth transitions
@@ -61,6 +68,7 @@ A sophisticated React application featuring an interactive calendar for visualiz
 | **Image Export** | html2canvas | 1.4.1 |
 | **CSV Export** | PapaParse | 5.5.3 |
 | **File Downloads** | FileSaver.js | 2.0.5 |
+| **AI Integration** | Google Gemini API | Latest |
 
 ## Project Architecture
 
@@ -80,9 +88,10 @@ src/
 │   ├── EnhancedInstrumentSelector.jsx     # Multi-asset instrument picker with categories
 │   ├── ExportButton.jsx                   # Export functionality trigger
 │   ├── ExportMenu.jsx                     # Export options menu
+│   ├── FinanceChatbot.jsx                 # AI-powered finance assistant with Google Gemini
 │   ├── ImplementationSummary.jsx          # Project features overview
 │   ├── RealTimeDataDashboard.jsx          # Live market data visualization
-│   └── Sidebar.jsx                        # Sidebar for demo
+│   └── Sidebar.jsx                        # Sidebar
 ├── context/
 │   ├── AppContext.jsx                     # Main application state context
 │   ├── AppContextProvider.jsx             # App state provider with data management
@@ -93,13 +102,12 @@ src/
 │   ├── useMarketData.jsx                  # Market data fetching and management
 │   └── useRealTimeData.jsx                # Real-time data fetching and management
 ├── pages/
-│   ├── ExportDemo.jsx                     # Export functionality demonstration
-│   ├── MarketCalendarPageNew.jsx          # Main application page with navigation
-│   └── ThemeDemo.jsx                      # Interactive theme showcase
+│   └── MarketCalendarPageNew.jsx          # Main application page with navigation
 ├── services/
 │   ├── apiService.jsx                     # API integration layer
 │   ├── enhacedApiService.jsx              # Enhanced API Service for Multiple Financial Instruments
 │   ├── exportService.js                   # Export functionality (PDF, CSV, Image)
+│   ├── geminiService.js                   # Google Gemini AI service for finance chatbot
 │   ├── marketDataService.jsx              # Market data processing and WebSocket
 │   └── websocketService.jsx               # WebSocket Service for Real-time Market Data
 ├── utils/
@@ -141,7 +149,16 @@ src/
    yarn dev
    ```
 
-4. **Open application**
+4. **Set up environment variables (optional)**
+   ```bash
+   # Copy environment template
+   cp .env.example .env
+   
+   # Edit .env file and add your Google Gemini API key
+   # VITE_GEMINI_API_KEY=your_gemini_api_key_here
+   ```
+
+5. **Open application**
    Navigate to `http://localhost:5173` in your browser
 
 ## API Integration
@@ -222,7 +239,10 @@ export const fetchCustomData = async (symbol) => {
 Create a `.env` file in the root directory:
 
 ```bash
-# Optional API keys for enhanced data
+# Google Gemini AI API Configuration
+VITE_GEMINI_API_KEY=your_gemini_api_key_here
+
+# Optional API keys for enhanced market data
 VITE_COINGECKO_API_KEY=your_api_key_here
 VITE_ALPHA_VANTAGE_KEY=your_alpha_vantage_key
 VITE_POLYGON_API_KEY=your_polygon_key
@@ -230,6 +250,10 @@ VITE_POLYGON_API_KEY=your_polygon_key
 # WebSocket configuration
 VITE_ENABLE_WEBSOCKET=true
 VITE_WS_RECONNECT_INTERVAL=5000
+
+# Development/Production settings
+VITE_ENV=development
+VITE_DEBUG_MODE=true
 ```
 
 ### Build Configuration

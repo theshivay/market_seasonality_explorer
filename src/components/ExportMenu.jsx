@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getTodayString } from '../utils/dateUtils';
 import {
   Menu,
   MenuItem,
@@ -80,7 +81,7 @@ const ExportMenu = ({
           }
           result = await exportService.exportToPDF(calendarElement, {
             ...exportSettings.pdf,
-            filename: `market-calendar-${new Date().toISOString().split('T')[0]}.pdf`
+            filename: `market-calendar-${getTodayString()}.pdf`
           });
           break;
           
@@ -90,7 +91,7 @@ const ExportMenu = ({
           }
           result = await exportService.exportToImage(calendarElement, {
             ...exportSettings.image,
-            filename: `market-calendar-${new Date().toISOString().split('T')[0]}.${exportSettings.image.format}`
+            filename: `market-calendar-${getTodayString()}.${exportSettings.image.format}`
           });
           break;
           
@@ -148,12 +149,12 @@ const ExportMenu = ({
           if (exportSettings.csv.enhanced && analysisData) {
             result = exportService.exportToEnhancedCSV(csvData, analysisData, {
               ...exportSettings.csv,
-              filename: `market-calendar-enhanced-${new Date().toISOString().split('T')[0]}.csv`
+              filename: `market-calendar-enhanced-${getTodayString()}.csv`
             });
           } else {
             result = exportService.exportToCSV(csvData, {
               ...exportSettings.csv,
-              filename: `market-calendar-data-${new Date().toISOString().split('T')[0]}.csv`
+              filename: `market-calendar-data-${getTodayString()}.csv`
             });
           }
           break;
